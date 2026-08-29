@@ -1,0 +1,13 @@
+Hi [( ${displayName} )],
+
+Please verify your TubeTasks email address by visiting the link below:
+
+[( ${actionUrl} )]
+
+This link expires at [( ${tokenExpiresAt} )] (UTC).
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+If you did not create an account, you can ignore this email.

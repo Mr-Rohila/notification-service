@@ -1,0 +1,40 @@
+# Maven build output
+target/
+
+# Maven Wrapper
+!.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# OS generated files
+.DS_Store
+Thumbs.db

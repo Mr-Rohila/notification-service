@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: notification-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URL:http://config-server:8888/config}"
+  cloud:
+    config:
+      username: ${CONFIG_SERVER_USERNAME:admin}
+      password: ${CONFIG_SERVER_PASSWORD:secret}
+      fail-fast: true
+      profile: dev
