@@ -22,7 +22,7 @@ public class ProcessedEventEntity {
     @Column(name = "event_id", length = 36, nullable = false, unique = true)
     private String eventId;
 
-    @Column(name = "business_key", length = 64, nullable = false, unique = true)
+    @Column(name = "business_key", columnDefinition = "CHAR(64)", nullable = false, unique = true)
     private String businessKey;
 
     @Column(name = "event_type", length = 64, nullable = false)
