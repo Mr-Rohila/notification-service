@@ -71,7 +71,7 @@ jobs:
 
             cp "$JAR" "$APP_DIR/app.jar"
 
-            sudo chown tasktube:tasktube "$APP_DIR/app.jar"
+            sudo chown ubuntu:ubuntu "$APP_DIR/app.jar"
             sudo chmod 664 "$APP_DIR/app.jar"
 
             sudo systemctl restart notification-service
