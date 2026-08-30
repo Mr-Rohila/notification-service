@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8"/>
-    <title>Verify your email</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.5; color: #222;">
-<p>Hi <span th:text="${displayName}">there</span>,</p>
-<p>Please verify your TubeTasks email address by clicking the link below:</p>
-<p><a th:href="${actionUrl}" th:text="${actionUrl}">Verify email</a></p>
-<p>This link expires at <span th:text="${tokenExpiresAt}">expiry</span> (UTC).</p>
-<p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
-<p>If you did not create an account, you can ignore this email.</p>
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Email Verification | TubeTasks', ~{::section})}">
+<section>
+    <h1>Email Verification</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>Thank you for registering with us. Please click the button below to verify your email address and complete the registration process.</p>
+    <div class="button-container">
+        <a th:href="${actionUrl}" class="button" style="color: #ffffff;">Verify Email</a>
+    </div>
+    <p>If you didn't create an account using this email address, please ignore this email.</p>
+</section>
 </html>

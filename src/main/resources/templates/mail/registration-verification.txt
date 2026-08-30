@@ -1,13 +1,11 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
 Hi [( ${displayName} )],
 
-Please verify your TubeTasks email address by visiting the link below:
+Thank you for registering with TubeTasks. Please verify your email address by visiting the link below:
 
 [( ${actionUrl} )]
 
-This link expires at [( ${tokenExpiresAt} )] (UTC).
+If you did not create an account using this email address, please ignore this email.
 
-[# th:if="${supportEmail != null}"]
-Need help? Contact us at [( ${supportEmail} )].
-[/]
-
-If you did not create an account, you can ignore this email.
+[# th:insert="~{mail/fragments/email-footer}" /]

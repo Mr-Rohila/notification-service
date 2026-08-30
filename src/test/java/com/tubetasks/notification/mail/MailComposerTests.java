@@ -40,7 +40,11 @@ class MailComposerTests {
                 "http://localhost:9000/api/v1/auth/register/verify?token=abc",
                 Instant.parse("2026-08-30T08:00:00Z"));
         assertThat(composed.htmlBody()).contains("Jane");
+        assertThat(composed.htmlBody()).contains("Email Verification");
+        assertThat(composed.htmlBody()).contains("Verify Email");
+        assertThat(composed.htmlBody()).contains("This is an automated message");
         assertThat(composed.textBody()).contains("http://localhost:9000");
+        assertThat(composed.textBody()).contains("TubeTasks");
     }
 
     private static SpringTemplateEngine htmlEngine() {
