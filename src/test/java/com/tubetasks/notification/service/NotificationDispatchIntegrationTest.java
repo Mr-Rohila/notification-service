@@ -22,7 +22,7 @@ import org.springframework.cloud.stream.binder.test.TestChannelBinderConfigurati
 import org.springframework.context.annotation.Import;
 import org.springframework.messaging.support.MessageBuilder;
 
-@SpringBootTest
+@SpringBootTest(properties = "notification-service.send-enabled=true")
 @Import({TestChannelBinderConfiguration.class, TestJwtDecoderConfig.class})
 class NotificationDispatchIntegrationTest {
 

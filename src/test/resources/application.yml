@@ -61,7 +61,19 @@ notification-service:
     from-name: TubeTasks
     allowed-action-url-prefixes:
       - http://localhost:9000
+  templates:
+    EMAIL_VERIFICATION_REQUESTED:
+      name: registration-verification
+      subject: Verify your TubeTasks email
+    PASSWORD_RESET_REQUESTED:
+      name: password-reset
+      subject: Reset your TubeTasks password
+  retention:
+    processed-event-days: 30
+    delivery-days: 90
+    cleanup-cron: "0 30 3 * * *"
   consumer-enabled: true
+  send-enabled: false
 
 management:
   endpoints:

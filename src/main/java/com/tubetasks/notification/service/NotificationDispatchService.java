@@ -6,6 +6,7 @@ import com.tubetasks.notification.api.exception.NonRetryableNotificationExceptio
 import com.tubetasks.notification.api.exception.RetryableNotificationException;
 import com.tubetasks.notification.api.exception.ValidationException;
 import com.tubetasks.notification.common.DisplayNameResolver;
+import com.tubetasks.notification.common.NotificationServiceProperties;
 import com.tubetasks.notification.event.EmailVerificationRequestedPayload;
 import com.tubetasks.notification.event.NotificationEvent;
 import com.tubetasks.notification.event.NotificationEventType;
@@ -41,10 +42,11 @@ public class NotificationDispatchService {
     private final ObjectMapper objectMapper;
     private final TemplateRegistry templateRegistry;
     private final MailComposer mailComposer;
-    private SmtpMailSender smtpMailSender;
+    private final SmtpMailSender smtpMailSender;
     private final ProcessedEventRepository processedEventRepository;
     private final DeliveryRepository deliveryRepository;
     private final NotificationMetrics notificationMetrics;
+    private final NotificationServiceProperties properties;
 
     public NotificationDispatchService(
             ObjectMapper objectMapper,
@@ -53,7 +55,8 @@ public class NotificationDispatchService {
             SmtpMailSender smtpMailSender,
             ProcessedEventRepository processedEventRepository,
             DeliveryRepository deliveryRepository,
-            NotificationMetrics notificationMetrics) {
+            NotificationMetrics notificationMetrics,
+            NotificationServiceProperties properties) {
         this.objectMapper = objectMapper;
         this.templateRegistry = templateRegistry;
         this.mailComposer = mailComposer;
@@ -61,6 +64,11 @@ public class NotificationDispatchService {
         this.processedEventRepository = processedEventRepository;
         this.deliveryRepository = deliveryRepository;
         this.notificationMetrics = notificationMetrics;
+        this.properties = properties;
+        if (!properties.isSendEnabled()) {
+            log.warn(
+                    "notification-service.send-enabled=false; emails will be marked SENT without SMTP delivery");
+        }
     }
 
     public DispatchOutcome dispatchFromKafka(NotificationEvent event) {
@@ -136,7 +144,16 @@ public class NotificationDispatchService {
 
         Timer.Sample sample = notificationMetrics.startSendTimer();
         try {
-            smtpMailSender.send(composed);
+            if (properties.isSendEnabled()) {
+                smtpMailSender.send(composed);
+            } else {
+                log.info(
+                        "Bypassed SMTP send eventId={} eventType={} userId={} template={} reason=send-enabled-false",
+                        event.eventId(),
+                        event.eventType(),
+                        parsed.userId(),
+                        template.templateName());
+            }
         } catch (EmailDeliveryException ex) {
             notificationMetrics.recordSmtpError(ex.getClass().getSimpleName());
             markFailed(processing, ex.getMessage());
@@ -147,11 +164,12 @@ public class NotificationDispatchService {
 
         markSent(processing, composed);
         log.info(
-                "Sent email eventId={} eventType={} userId={} template={} outcome=sent",
+                "Sent email eventId={} eventType={} userId={} template={} outcome=sent delivery={}",
                 event.eventId(),
                 event.eventType(),
                 parsed.userId(),
-                template.templateName());
+                template.templateName(),
+                properties.isSendEnabled() ? "smtp" : "bypassed");
         notificationMetrics.recordConsumed(event.eventType(), "sent");
         return new DispatchOutcome(event.eventId(), DispatchStatus.SENT, event.serviceRequestId());
     }

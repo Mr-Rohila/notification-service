@@ -31,7 +31,7 @@ public class NotificationRetentionJob {
         this.processedEventRepository = processedEventRepository;
     }
 
-    @Scheduled(cron = "${notification-service.retention.cleanup-cron:0 30 3 * * *}")
+    @Scheduled(cron = "${notification-service.retention.cleanup-cron}")
     @Transactional
     public void cleanup() {
         Instant deliveryCutoff =

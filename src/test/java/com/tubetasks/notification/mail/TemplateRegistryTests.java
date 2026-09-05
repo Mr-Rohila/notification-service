@@ -13,7 +13,15 @@ class TemplateRegistryTests {
 
     @BeforeEach
     void setUp() {
-        templateRegistry = new TemplateRegistry(new NotificationServiceProperties());
+        NotificationServiceProperties properties = new NotificationServiceProperties();
+        properties.getMail().setFrom("noreply@tubetasks.in");
+        properties.getMail().setFromName("TubeTasks");
+        NotificationServiceProperties.TemplateDefinition verification =
+                new NotificationServiceProperties.TemplateDefinition();
+        verification.setName("registration-verification");
+        verification.setSubject("Verify your TubeTasks email");
+        properties.getTemplates().put("EMAIL_VERIFICATION_REQUESTED", verification);
+        templateRegistry = new TemplateRegistry(properties);
     }
 
     @Test

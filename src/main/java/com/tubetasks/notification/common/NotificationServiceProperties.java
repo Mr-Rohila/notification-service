@@ -1,6 +1,6 @@
 package com.tubetasks.notification.common;
 
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,22 +10,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class NotificationServiceProperties {
 
     private Mail mail = new Mail();
-    private Map<String, TemplateDefinition> templates = defaultTemplates();
+    private Map<String, TemplateDefinition> templates = new LinkedHashMap<>();
     private Retention retention = new Retention();
     private boolean consumerEnabled = true;
-
-    private static Map<String, TemplateDefinition> defaultTemplates() {
-        Map<String, TemplateDefinition> defaults = new LinkedHashMap<>();
-        TemplateDefinition verification = new TemplateDefinition();
-        verification.setName("registration-verification");
-        verification.setSubject("Verify your TubeTasks email");
-        defaults.put("EMAIL_VERIFICATION_REQUESTED", verification);
-        TemplateDefinition reset = new TemplateDefinition();
-        reset.setName("password-reset");
-        reset.setSubject("Reset your TubeTasks password");
-        defaults.put("PASSWORD_RESET_REQUESTED", reset);
-        return defaults;
-    }
+    private boolean sendEnabled = false;
 
     public Mail getMail() {
         return mail;
@@ -59,10 +47,18 @@ public class NotificationServiceProperties {
         this.consumerEnabled = consumerEnabled;
     }
 
+    public boolean isSendEnabled() {
+        return sendEnabled;
+    }
+
+    public void setSendEnabled(boolean sendEnabled) {
+        this.sendEnabled = sendEnabled;
+    }
+
     public static class Mail {
-        private String from = "noreply@tubetasks.in";
-        private String fromName = "TubeTasks";
-        private List<String> allowedActionUrlPrefixes = List.of("http://localhost:9000");
+        private String from;
+        private String fromName;
+        private List<String> allowedActionUrlPrefixes = new ArrayList<>();
         private String supportEmail;
 
         public String getFrom() {
@@ -120,9 +116,9 @@ public class NotificationServiceProperties {
     }
 
     public static class Retention {
-        private int processedEventDays = 30;
-        private int deliveryDays = 90;
-        private String cleanupCron = "0 30 3 * * *";
+        private int processedEventDays;
+        private int deliveryDays;
+        private String cleanupCron;
 
         public int getProcessedEventDays() {
             return processedEventDays;
