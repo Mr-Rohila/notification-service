@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface DeliveryRepository extends JpaRepository<DeliveryEntity, String> {
 
+    boolean existsByEventId(String eventId);
+
     @Modifying
     @Query("delete from DeliveryEntity d where d.createdAt < :cutoff")
     int deleteCreatedBefore(@Param("cutoff") Instant cutoff);

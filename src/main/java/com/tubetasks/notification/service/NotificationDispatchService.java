@@ -112,11 +112,34 @@ public class NotificationDispatchService {
             return new DispatchOutcome(event.eventId(), DispatchStatus.EXPIRED, event.serviceRequestId());
         }
 
+        try {
+            mailComposer.validateActionUrl(parsed.actionUrl());
+        } catch (IllegalArgumentException ex) {
+            persistTerminalState(event, parsed, ProcessedEventStatus.FAILED, null, "INVALID_ACTION_URL", ex.getMessage());
+            log.warn(
+                    "Rejected action URL for eventId={} eventType={} url={} reason={}",
+                    event.eventId(),
+                    event.eventType(),
+                    parsed.actionUrl(),
+                    ex.getMessage());
+            notificationMetrics.recordConsumed(event.eventType(), "invalid_action_url");
+            throw new NonRetryableNotificationException("Action URL is not allowed: " + ex.getMessage());
+        }
+
         String businessKey = computeBusinessKey(event.eventType(), parsed.userId(), parsed.rawToken());
         Optional<ProcessedEventEntity> existingEventId = processedEventRepository.findByEventId(event.eventId());
         if (existingEventId.isPresent()) {
-            notificationMetrics.recordConsumed(event.eventType(), "duplicate");
-            return new DispatchOutcome(event.eventId(), DispatchStatus.DUPLICATE, event.serviceRequestId());
+            ProcessedEventEntity existing = existingEventId.get();
+            ProcessedEventStatus status = existing.getStatus();
+            if (status == ProcessedEventStatus.SENT
+                    || status == ProcessedEventStatus.SKIPPED
+                    || status == ProcessedEventStatus.EXPIRED) {
+                notificationMetrics.recordConsumed(event.eventType(), "duplicate");
+                return new DispatchOutcome(event.eventId(), DispatchStatus.DUPLICATE, event.serviceRequestId());
+            }
+            // PROCESSING / FAILED: resume and finish delivery instead of treating as duplicate.
+            existing.setStatus(ProcessedEventStatus.PROCESSING);
+            return completeDispatch(event, parsed, processedEventRepository.save(existing));
         }
 
         Optional<ProcessedEventEntity> existingBusinessKey =
@@ -136,7 +159,11 @@ public class NotificationDispatchService {
         } else {
             processing = reserveProcessing(event, parsed, businessKey);
         }
-        mailComposer.validateActionUrl(parsed.actionUrl());
+        return completeDispatch(event, parsed, processing);
+    }
+
+    private DispatchOutcome completeDispatch(
+            NotificationEvent event, ParsedNotification parsed, ProcessedEventEntity processing) {
         TemplateRegistry.TemplateDefinition template = templateRegistry.resolve(event.eventType());
         String displayName = DisplayNameResolver.resolve(parsed.displayName(), parsed.email());
         MailComposer.ComposedMail composed =
@@ -271,6 +298,9 @@ public class NotificationDispatchService {
     protected void markSent(ProcessedEventEntity processing, MailComposer.ComposedMail composed) {
         processing.setStatus(ProcessedEventStatus.SENT);
         processedEventRepository.save(processing);
+        if (deliveryRepository.existsByEventId(processing.getEventId())) {
+            return;
+        }
         DeliveryEntity delivery = new DeliveryEntity();
         delivery.setEventId(processing.getEventId());
         delivery.setTemplate(composed.template().templateName());
@@ -305,36 +335,72 @@ public class NotificationDispatchService {
             ParsedNotification parsed,
             ProcessedEventStatus status,
             MailComposer.ComposedMail composed) {
-        if (processedEventRepository.findByEventId(event.eventId()).isPresent()) {
+        persistTerminalState(event, parsed, status, composed, null, null);
+    }
+
+    @Transactional
+    protected void persistTerminalState(
+            NotificationEvent event,
+            ParsedNotification parsed,
+            ProcessedEventStatus status,
+            MailComposer.ComposedMail composed,
+            String errorCode,
+            String errorMessage) {
+        Optional<ProcessedEventEntity> existing = processedEventRepository.findByEventId(event.eventId());
+        ProcessedEventEntity entity;
+        if (existing.isPresent()) {
+            entity = existing.get();
+            if (entity.getStatus() == ProcessedEventStatus.SENT
+                    || entity.getStatus() == ProcessedEventStatus.SKIPPED
+                    || entity.getStatus() == ProcessedEventStatus.EXPIRED) {
+                return;
+            }
+            entity.setStatus(status);
+            entity = processedEventRepository.save(entity);
+        } else {
+            String businessKey = computeBusinessKey(event.eventType(), parsed.userId(), parsed.rawToken());
+            Optional<ProcessedEventEntity> byBusinessKey =
+                    processedEventRepository.findByBusinessKey(businessKey);
+            if (byBusinessKey.isPresent()
+                    && (byBusinessKey.get().getStatus() == ProcessedEventStatus.SENT
+                            || byBusinessKey.get().getStatus() == ProcessedEventStatus.SKIPPED
+                            || byBusinessKey.get().getStatus() == ProcessedEventStatus.EXPIRED)) {
+                return;
+            }
+            entity = byBusinessKey.orElseGet(ProcessedEventEntity::new);
+            entity.setEventId(event.eventId());
+            entity.setBusinessKey(businessKey);
+            entity.setEventType(event.eventType());
+            entity.setEventVersion(event.eventVersion());
+            entity.setUserId(parsed.userId());
+            entity.setSource(event.source());
+            entity.setServiceRequestId(resolveServiceRequestId(event.serviceRequestId()));
+            entity.setStatus(status);
+            entity = processedEventRepository.save(entity);
+        }
+
+        if (deliveryRepository.existsByEventId(entity.getEventId())) {
             return;
         }
-        String businessKey = computeBusinessKey(event.eventType(), parsed.userId(), parsed.rawToken());
-        if (processedEventRepository.findByBusinessKey(businessKey).isPresent()) {
-            return;
-        }
-        ProcessedEventEntity entity = new ProcessedEventEntity();
-        entity.setEventId(event.eventId());
-        entity.setBusinessKey(businessKey);
-        entity.setEventType(event.eventType());
-        entity.setEventVersion(event.eventVersion());
-        entity.setUserId(parsed.userId());
-        entity.setSource(event.source());
-        entity.setServiceRequestId(resolveServiceRequestId(event.serviceRequestId()));
-        entity.setStatus(status);
-        processedEventRepository.save(entity);
+        DeliveryEntity delivery = new DeliveryEntity();
+        delivery.setEventId(entity.getEventId());
         if (composed != null) {
-            DeliveryEntity delivery = new DeliveryEntity();
-            delivery.setEventId(entity.getEventId());
             delivery.setTemplate(composed.template().templateName());
             delivery.setRecipientEmail(composed.recipientEmail());
             delivery.setSubject(composed.template().subject());
-            delivery.setStatus(status.name());
-            delivery.setServiceRequestId(entity.getServiceRequestId());
-            if (status == ProcessedEventStatus.SENT) {
-                delivery.setSentAt(Instant.now());
-            }
-            deliveryRepository.save(delivery);
+        } else {
+            delivery.setTemplate(event.eventType());
+            delivery.setRecipientEmail(parsed.email() != null ? parsed.email() : "unknown");
+            delivery.setSubject(status.name());
         }
+        delivery.setStatus(status.name());
+        delivery.setErrorCode(errorCode);
+        delivery.setErrorMessage(truncate(errorMessage, 512));
+        delivery.setServiceRequestId(entity.getServiceRequestId());
+        if (status == ProcessedEventStatus.SENT) {
+            delivery.setSentAt(Instant.now());
+        }
+        deliveryRepository.save(delivery);
     }
 
     static String computeBusinessKey(String eventType, String userId, String rawToken) {
