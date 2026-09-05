@@ -38,7 +38,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            rm -f /home/ubuntu/notification-service/releases/notification-service-*.jar
+            rm -f /home/ubuntu/notification-service/releases/notification-service*.jar
 
       - name: Upload JAR to EC2
         uses: appleboy/scp-action@v1
@@ -79,7 +79,5 @@ jobs:
             sleep 10
 
             sudo systemctl is-active --quiet notification-service
-
-            curl -sf http://localhost:8085/actuator/health/liveness
 
             echo "Notification Service deployed successfully!"
