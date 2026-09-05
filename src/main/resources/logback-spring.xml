@@ -9,7 +9,7 @@
                     defaultValue="./logs/notification-service.log"/>
 
     <property name="LOG_PATTERN"
-              value="%d{ISO8601} %-5level [%thread] ${applicationName} [%X{serviceRequestId:-}] %logger{36} - %maskedMsg%n"/>
+              value="{timestamp=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%-5level service=${applicationName} thread=%thread requestId=%X{serviceRequestId:-} logger=%logger{36} message=%maskedMsg}%n"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
