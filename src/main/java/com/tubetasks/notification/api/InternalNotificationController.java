@@ -37,7 +37,7 @@ public class InternalNotificationController {
     @Operation(summary = "Send a notification email synchronously")
     public ResponseEntity<SendNotificationResponse> send(@Valid @RequestBody SendNotificationRequest request) {
         String eventId = StringUtils.hasText(request.eventId()) ? request.eventId() : UUID.randomUUID().toString();
-        String serviceRequestId = MDC.get(ServiceRequestIdFilter.MDC_KEY);
+        String serviceRequestId = MDC.get(ServiceRequestIdFilter.SERVICE_REQUEST_ID);
         NotificationEvent event = new NotificationEvent(
                 eventId,
                 request.eventType(),

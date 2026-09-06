@@ -25,9 +25,9 @@ public class SmtpMailSender {
             helper.setTo(composedMail.recipientEmail());
             helper.setSubject(composedMail.template().subject());
             helper.setText(composedMail.textBody(), composedMail.htmlBody());
-            String serviceRequestId = MDC.get(ServiceRequestIdFilter.MDC_KEY);
+            String serviceRequestId = MDC.get(ServiceRequestIdFilter.SERVICE_REQUEST_ID);
             if (serviceRequestId != null) {
-                message.setHeader(ServiceRequestIdFilter.HEADER_NAME, serviceRequestId);
+                message.setHeader(ServiceRequestIdFilter.SERVICE_REQUEST_ID_HEADER, serviceRequestId);
             }
             mailSender.send(message);
         } catch (Exception ex) {

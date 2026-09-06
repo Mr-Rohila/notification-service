@@ -34,11 +34,11 @@ public class NotificationEventConsumer implements Consumer<Message<NotificationE
         if (!StringUtils.hasText(serviceRequestId)) {
             serviceRequestId = NotificationDispatchService.resolveServiceRequestId(null);
         }
-        MDC.put(ServiceRequestIdFilter.MDC_KEY, serviceRequestId);
+        MDC.put(ServiceRequestIdFilter.SERVICE_REQUEST_ID, serviceRequestId);
         try {
             dispatchService.dispatchFromKafka(event);
         } finally {
-            MDC.remove(ServiceRequestIdFilter.MDC_KEY);
+            MDC.remove(ServiceRequestIdFilter.SERVICE_REQUEST_ID);
         }
     }
 

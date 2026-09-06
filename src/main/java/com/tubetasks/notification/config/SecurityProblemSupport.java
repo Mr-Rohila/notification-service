@@ -47,7 +47,7 @@ public class SecurityProblemSupport implements AuthenticationEntryPoint, AccessD
         body.put("status", status);
         body.put("code", code);
         body.put("message", message);
-        body.put("serviceRequestId", MDC.get(ServiceRequestIdFilter.MDC_KEY));
+        body.put(ServiceRequestIdFilter.SERVICE_REQUEST_ID, MDC.get(ServiceRequestIdFilter.SERVICE_REQUEST_ID));
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), body);

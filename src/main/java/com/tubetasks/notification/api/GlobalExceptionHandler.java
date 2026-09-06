@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
         body.put("status", status.value());
         body.put("code", code);
         body.put("message", message);
-        body.put("serviceRequestId", MDC.get(ServiceRequestIdFilter.MDC_KEY));
+        body.put(ServiceRequestIdFilter.SERVICE_REQUEST_ID, MDC.get(ServiceRequestIdFilter.SERVICE_REQUEST_ID));
         if (details != null && !details.isEmpty()) {
             body.put("details", details);
         }
