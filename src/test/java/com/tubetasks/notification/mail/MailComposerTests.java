@@ -18,7 +18,7 @@ class MailComposerTests {
     @BeforeEach
     void setUp() {
         NotificationServiceProperties properties = new NotificationServiceProperties();
-        properties.getMail().setAllowedActionUrlPrefixes(java.util.List.of("http://localhost:9000"));
+        properties.getMail().setAllowedActionUrlPrefixes(java.util.List.of("http://localhost:9000/auth"));
         mailComposer = new MailComposer(htmlEngine(), textEngine(), properties);
     }
 
@@ -37,13 +37,13 @@ class MailComposerTests {
                 template,
                 "Jane",
                 "jane@example.com",
-                "http://localhost:9000/api/v1/auth/register/verify?token=abc",
+                "http://localhost:9000/auth/api/v1/auth/register/verify?token=abc",
                 Instant.parse("2026-08-30T08:00:00Z"));
         assertThat(composed.htmlBody()).contains("Jane");
         assertThat(composed.htmlBody()).contains("Email Verification");
         assertThat(composed.htmlBody()).contains("Verify Email");
         assertThat(composed.htmlBody()).contains("This is an automated message");
-        assertThat(composed.textBody()).contains("http://localhost:9000");
+        assertThat(composed.textBody()).contains("http://localhost:9000/auth");
         assertThat(composed.textBody()).contains("TubeTasks");
     }
 

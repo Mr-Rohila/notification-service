@@ -106,7 +106,7 @@ class NotificationDispatchIntegrationTest {
                 "Jane Doe",
                 "jane@example.com",
                 token,
-                "http://localhost:9000/api/v1/auth/register/verify?token=" + token,
+                "http://localhost:9000/auth/api/v1/auth/register/verify?token=" + token,
                 Instant.now().plusSeconds(3600));
         return new NotificationEvent(
                 eventId,

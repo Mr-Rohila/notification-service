@@ -46,7 +46,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          issuer-uri: http://localhost:9000/auth
 
 eureka:
   client:
@@ -60,7 +60,7 @@ notification-service:
     from: noreply@tubetasks.in
     from-name: TubeTasks
     allowed-action-url-prefixes:
-      - http://localhost:9000
+      - http://localhost:9000/auth
   templates:
     EMAIL_VERIFICATION_REQUESTED:
       name: registration-verification

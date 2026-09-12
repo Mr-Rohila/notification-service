@@ -71,7 +71,7 @@ class InternalNotificationSecurityTests {
                     "displayName": "Jane Doe",
                     "email": "jane@example.com",
                     "verificationToken": "token-value",
-                    "verificationUrl": "http://localhost:9000/api/v1/auth/register/verify?token=token-value",
+                    "verificationUrl": "http://localhost:9000/auth/api/v1/auth/register/verify?token=token-value",
                     "tokenExpiresAt": "%s"
                   }
                 }

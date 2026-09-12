@@ -36,7 +36,7 @@ class NotificationEventContractTests {
                     "displayName": "Jane Doe",
                     "email": "user@example.com",
                     "verificationToken": "token-value",
-                    "verificationUrl": "http://localhost:9000/api/v1/auth/register/verify?token=token-value",
+                    "verificationUrl": "http://localhost:9000/auth/api/v1/auth/register/verify?token=token-value",
                     "tokenExpiresAt": "2026-08-30T08:00:00Z",
                     "from": "ignored@example.com",
                     "template": "ignored-template"
@@ -52,7 +52,7 @@ class NotificationEventContractTests {
         assertThat(event.eventVersion()).isEqualTo(1);
         assertThat(payload.email()).isEqualTo("user@example.com");
         assertThat(payload.verificationUrl())
-                .isEqualTo("http://localhost:9000/api/v1/auth/register/verify?token=token-value");
+                .isEqualTo("http://localhost:9000/auth/api/v1/auth/register/verify?token=token-value");
         assertThat(payload.tokenExpiresAt()).isEqualTo(Instant.parse("2026-08-30T08:00:00Z"));
     }
 
@@ -72,7 +72,7 @@ class NotificationEventContractTests {
                     "displayName": "Jane Doe",
                     "email": "user@example.com",
                     "resetToken": "reset-token",
-                    "resetUrl": "http://localhost:9000/password-reset?token=reset-token",
+                    "resetUrl": "http://localhost:9000/auth/password-reset?token=reset-token",
                     "tokenExpiresAt": "2026-08-29T08:30:00Z"
                   }
                 }
@@ -83,6 +83,6 @@ class NotificationEventContractTests {
                 objectMapper.convertValue(event.payload(), PasswordResetRequestedPayload.class);
 
         assertThat(event.eventType()).isEqualTo("PASSWORD_RESET_REQUESTED");
-        assertThat(payload.resetUrl()).isEqualTo("http://localhost:9000/password-reset?token=reset-token");
+        assertThat(payload.resetUrl()).isEqualTo("http://localhost:9000/auth/password-reset?token=reset-token");
     }
 }
