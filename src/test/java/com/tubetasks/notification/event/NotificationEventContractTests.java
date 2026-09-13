@@ -85,4 +85,102 @@ class NotificationEventContractTests {
         assertThat(event.eventType()).isEqualTo("PASSWORD_RESET_REQUESTED");
         assertThat(payload.resetUrl()).isEqualTo("http://localhost:9000/auth/password-reset?token=reset-token");
     }
+
+    @Test
+    void deserializesAccountActivatedEvent() throws Exception {
+        String json =
+                """
+                {
+                  "eventId": "9e1f8891-9647-62f0-166d-g29he3h12cg9",
+                  "eventType": "ACCOUNT_ACTIVATED",
+                  "eventVersion": 1,
+                  "occurredAt": "2026-09-13T08:00:00Z",
+                  "source": "auth-server",
+                  "serviceRequestId": "req-welcome-1",
+                  "payload": {
+                    "userId": "0194a2b3-c4d5-7890-abcd-ef1234567890",
+                    "displayName": "Jane Doe",
+                    "email": "user@example.com",
+                    "loginUrl": "http://localhost:9000/auth/login"
+                  }
+                }
+                """;
+
+        NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
+        AccountActivatedPayload payload = objectMapper.convertValue(event.payload(), AccountActivatedPayload.class);
+
+        assertThat(event.eventType()).isEqualTo("ACCOUNT_ACTIVATED");
+        assertThat(payload.loginUrl()).isEqualTo("http://localhost:9000/auth/login");
+        assertThat(payload.email()).isEqualTo("user@example.com");
+    }
+
+    @Test
+    void deserializesPaymentSubmittedEventFromUserServiceFixture() throws Exception {
+        String json =
+                """
+                {
+                  "eventId": "11111111-1111-1111-1111-111111111111",
+                  "eventType": "PAYMENT_SUBMITTED",
+                  "eventVersion": 1,
+                  "occurredAt": "2026-09-05T10:30:00Z",
+                  "source": "user-service",
+                  "serviceRequestId": "req-1",
+                  "payload": {
+                    "userId": "0194a2b3-c4d5-7890-abcd-ef1234567890",
+                    "displayName": "Jane Doe",
+                    "email": "user@example.com",
+                    "transactionId": "txn-1",
+                    "amount": "100.0000",
+                    "currency": "INR",
+                    "status": "PENDING",
+                    "type": "CREDIT"
+                  }
+                }
+                """;
+
+        NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
+        TransactionNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), TransactionNotificationPayload.class);
+
+        assertThat(event.eventType()).isEqualTo("PAYMENT_SUBMITTED");
+        assertThat(payload.amount()).isEqualTo("100.0000");
+        assertThat(payload.transactionId()).isEqualTo("txn-1");
+        assertThat(payload.currency()).isEqualTo("INR");
+    }
+
+    @Test
+    void deserializesSubscriptionPurchasedEventFromTaskServiceFixture() throws Exception {
+        String json =
+                """
+                {
+                  "eventId": "22222222-2222-2222-2222-222222222222",
+                  "eventType": "SUBSCRIPTION_PURCHASED",
+                  "eventVersion": 1,
+                  "occurredAt": "2026-09-06T15:00:00Z",
+                  "source": "task-service",
+                  "serviceRequestId": "req-1",
+                  "payload": {
+                    "userId": "0194a2b3-c4d5-7890-abcd-ef1234567890",
+                    "displayName": "Jane Doe",
+                    "email": "user@example.com",
+                    "purchaseId": "purchase-1",
+                    "planTitle": "Starter",
+                    "channelTitle": "My Channel",
+                    "amount": "199.0000",
+                    "currency": "INR",
+                    "status": "ACTIVE"
+                  }
+                }
+                """;
+
+        NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
+        CampaignNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), CampaignNotificationPayload.class);
+
+        assertThat(event.eventType()).isEqualTo("SUBSCRIPTION_PURCHASED");
+        assertThat(payload.purchaseId()).isEqualTo("purchase-1");
+        assertThat(payload.planTitle()).isEqualTo("Starter");
+        assertThat(payload.channelTitle()).isEqualTo("My Channel");
+        assertThat(payload.amount()).isEqualTo("199.0000");
+    }
 }

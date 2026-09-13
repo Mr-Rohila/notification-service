@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Welcome to TubeTasks', ~{::section})}">
+<section>
+    <h1>Welcome to TubeTasks</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>Your profile is ready. You can now log in and start using TubeTasks.</p>
+    <div class="button-container" th:if="${actionUrl != null}">
+        <a th:href="${actionUrl}" class="button" style="color: #ffffff;">Log in</a>
+    </div>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

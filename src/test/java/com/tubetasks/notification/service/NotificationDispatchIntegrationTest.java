@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.ServerSetup;
 import com.tubetasks.notification.config.TestJwtDecoderConfig;
+import com.tubetasks.notification.event.AccountActivatedPayload;
+import com.tubetasks.notification.event.CampaignNotificationPayload;
 import com.tubetasks.notification.event.EmailVerificationRequestedPayload;
 import com.tubetasks.notification.event.NotificationEvent;
+import com.tubetasks.notification.event.TransactionNotificationPayload;
 import com.tubetasks.notification.persistence.DeliveryRepository;
 import com.tubetasks.notification.persistence.ProcessedEventRepository;
 import com.tubetasks.notification.persistence.ProcessedEventStatus;
@@ -100,6 +103,71 @@ class NotificationDispatchIntegrationTest {
         assertThat(greenMail.getReceivedMessages()).hasSize(2);
     }
 
+    @Test
+    void consumesWelcomeEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = welcomeEvent("event-welcome");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("Welcome to TubeTasks");
+        assertThat(processedEventRepository.findByEventId("event-welcome"))
+                .isPresent()
+                .get()
+                .extracting(entity -> entity.getStatus())
+                .isEqualTo(ProcessedEventStatus.SENT);
+    }
+
+    @Test
+    void consumesPaymentSubmittedEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = paymentSubmittedEvent("event-pay-1", "txn-1");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("deposit request");
+        assertThat(processedEventRepository.findByEventId("event-pay-1"))
+                .isPresent()
+                .get()
+                .extracting(entity -> entity.getStatus())
+                .isEqualTo(ProcessedEventStatus.SENT);
+    }
+
+    @Test
+    void consumesWithdrawalRejectedEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = withdrawalRejectedEvent("event-wd-rej", "txn-wd-1");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("withdrawal was not approved");
+    }
+
+    @Test
+    void consumesSubscriptionPurchasedEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = subscriptionPurchasedEvent("event-sub-1", "purchase-1");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("campaign is active");
+        assertThat(processedEventRepository.findByEventId("event-sub-1"))
+                .isPresent()
+                .get()
+                .extracting(entity -> entity.getStatus())
+                .isEqualTo(ProcessedEventStatus.SENT);
+    }
+
+    @Test
+    void consumesCampaignCompletedEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = campaignCompletedEvent("event-camp-1", "purchase-1");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("campaign is complete");
+    }
+
     private static NotificationEvent verificationEvent(String eventId, String token) {
         EmailVerificationRequestedPayload payload = new EmailVerificationRequestedPayload(
                 "user-123",
@@ -116,5 +184,78 @@ class NotificationDispatchIntegrationTest {
                 "auth-server",
                 "req-test",
                 payload);
+    }
+
+    private static NotificationEvent welcomeEvent(String eventId) {
+        AccountActivatedPayload payload = new AccountActivatedPayload(
+                "user-123", "Jane Doe", "jane@example.com", "http://localhost:9000/auth/login");
+        return new NotificationEvent(
+                eventId, "ACCOUNT_ACTIVATED", 1, Instant.now(), "auth-server", "req-test", payload);
+    }
+
+    private static NotificationEvent paymentSubmittedEvent(String eventId, String transactionId) {
+        TransactionNotificationPayload payload = new TransactionNotificationPayload(
+                "user-123",
+                "Jane Doe",
+                "jane@example.com",
+                transactionId,
+                "100.0000",
+                "INR",
+                "PENDING",
+                "CREDIT",
+                null,
+                null);
+        return new NotificationEvent(
+                eventId, "PAYMENT_SUBMITTED", 1, Instant.now(), "user-service", "req-test", payload);
+    }
+
+    private static NotificationEvent withdrawalRejectedEvent(String eventId, String transactionId) {
+        TransactionNotificationPayload payload = new TransactionNotificationPayload(
+                "user-123",
+                "Jane Doe",
+                "jane@example.com",
+                transactionId,
+                "50.0000",
+                "INR",
+                "REJECTED",
+                "DEBIT",
+                "Invalid UPI",
+                "jane@oksbi");
+        return new NotificationEvent(
+                eventId, "WITHDRAWAL_REJECTED", 1, Instant.now(), "user-service", "req-test", payload);
+    }
+
+    private static NotificationEvent subscriptionPurchasedEvent(String eventId, String purchaseId) {
+        CampaignNotificationPayload payload = new CampaignNotificationPayload(
+                "user-123",
+                "Jane Doe",
+                "jane@example.com",
+                purchaseId,
+                null,
+                "Starter",
+                "My Channel",
+                "199.0000",
+                "INR",
+                "ACTIVE",
+                null);
+        return new NotificationEvent(
+                eventId, "SUBSCRIPTION_PURCHASED", 1, Instant.now(), "task-service", "req-test", payload);
+    }
+
+    private static NotificationEvent campaignCompletedEvent(String eventId, String purchaseId) {
+        CampaignNotificationPayload payload = new CampaignNotificationPayload(
+                "user-123",
+                "Jane Doe",
+                "jane@example.com",
+                purchaseId,
+                null,
+                "Starter",
+                "My Channel",
+                "199.0000",
+                "INR",
+                "COMPLETED",
+                null);
+        return new NotificationEvent(
+                eventId, "CAMPAIGN_COMPLETED", 1, Instant.now(), "task-service", "req-test", payload);
     }
 }

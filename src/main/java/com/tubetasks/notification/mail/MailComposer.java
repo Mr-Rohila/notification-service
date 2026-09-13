@@ -38,11 +38,28 @@ public class MailComposer {
             String email,
             String actionUrl,
             Instant tokenExpiresAt) {
+        return compose(template, displayName, email, actionUrl, tokenExpiresAt, Map.of());
+    }
+
+    public ComposedMail compose(
+            TemplateRegistry.TemplateDefinition template,
+            String displayName,
+            String email,
+            String actionUrl,
+            Instant tokenExpiresAt,
+            Map<String, Object> extraVariables) {
         Map<String, Object> variables = new HashMap<>();
+        if (extraVariables != null) {
+            variables.putAll(extraVariables);
+        }
         variables.put("displayName", displayName);
         variables.put("email", email);
-        variables.put("actionUrl", actionUrl);
-        variables.put("tokenExpiresAt", EXPIRY_FORMAT.format(tokenExpiresAt));
+        if (StringUtils.hasText(actionUrl)) {
+            variables.put("actionUrl", actionUrl);
+        }
+        if (tokenExpiresAt != null) {
+            variables.put("tokenExpiresAt", EXPIRY_FORMAT.format(tokenExpiresAt));
+        }
         String supportEmail = properties.getMail().getSupportEmail();
         if (StringUtils.hasText(supportEmail)) {
             variables.put("supportEmail", supportEmail);
@@ -56,7 +73,7 @@ public class MailComposer {
 
     public void validateActionUrl(String actionUrl) {
         if (!StringUtils.hasText(actionUrl)) {
-            throw new IllegalArgumentException("Action URL is required");
+            return;
         }
         if (!actionUrl.startsWith("http://") && !actionUrl.startsWith("https://")) {
             throw new IllegalArgumentException("Action URL must use http or https");

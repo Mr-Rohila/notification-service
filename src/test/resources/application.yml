@@ -68,6 +68,33 @@ notification-service:
     PASSWORD_RESET_REQUESTED:
       name: password-reset
       subject: Reset your TubeTasks password
+    ACCOUNT_ACTIVATED:
+      name: welcome
+      subject: Welcome to TubeTasks — your account is ready
+    PAYMENT_SUBMITTED:
+      name: payment-submitted
+      subject: We received your TubeTasks deposit request
+    PAYMENT_APPROVED:
+      name: payment-approved
+      subject: Your TubeTasks deposit was approved
+    PAYMENT_REJECTED:
+      name: payment-rejected
+      subject: Your TubeTasks deposit was not approved
+    WITHDRAWAL_CREATED:
+      name: withdrawal-created
+      subject: We received your TubeTasks withdrawal request
+    WITHDRAWAL_APPROVED:
+      name: withdrawal-approved
+      subject: Your TubeTasks withdrawal was approved
+    WITHDRAWAL_REJECTED:
+      name: withdrawal-rejected
+      subject: Your TubeTasks withdrawal was not approved
+    SUBSCRIPTION_PURCHASED:
+      name: subscription-purchased
+      subject: Your TubeTasks campaign is active
+    CAMPAIGN_COMPLETED:
+      name: campaign-completed
+      subject: Your TubeTasks campaign is complete
   retention:
     processed-event-days: 30
     delivery-days: 90

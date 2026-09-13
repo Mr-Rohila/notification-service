@@ -1,0 +1,17 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+Your withdrawal has been approved and the payout is being sent.
+
+Amount: [( ${amount} )] [( ${currency} )]
+Reference: [( ${transactionId} )]
+[# th:if="${upiId != null}"]
+Payout UPI: [( ${upiId} )]
+[/]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

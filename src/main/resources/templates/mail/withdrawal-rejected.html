@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Withdrawal not approved | TubeTasks', ~{::section})}">
+<section>
+    <h1>Withdrawal not approved</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>Your withdrawal request was not approved. Locked funds have been returned to your wallet.</p>
+    <p>
+        Amount: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p>Reference: <span th:text="${transactionId}">txn-id</span></p>
+    <p th:if="${rejectReason != null}">Reason: <span th:text="${rejectReason}">reason</span></p>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

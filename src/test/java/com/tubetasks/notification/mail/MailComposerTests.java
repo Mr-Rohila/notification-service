@@ -47,6 +47,96 @@ class MailComposerTests {
         assertThat(composed.textBody()).contains("TubeTasks");
     }
 
+    @Test
+    void composesWelcomeMail() {
+        TemplateRegistry.TemplateDefinition template =
+                new TemplateRegistry.TemplateDefinition("welcome", "Welcome to TubeTasks", "noreply@tubetasks.in", "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template, "Jane", "jane@example.com", "http://localhost:9000/auth/login", null);
+        assertThat(composed.htmlBody()).contains("Welcome to TubeTasks");
+        assertThat(composed.htmlBody()).contains("Log in");
+        assertThat(composed.textBody()).contains("http://localhost:9000/auth/login");
+    }
+
+    @Test
+    void composesPaymentSubmittedMail() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "payment-submitted", "We received your TubeTasks deposit request", "noreply@tubetasks.in", "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                null,
+                null,
+                java.util.Map.of("amount", "100.0000", "currency", "INR", "transactionId", "txn-1"));
+        assertThat(composed.htmlBody()).contains("Deposit request received");
+        assertThat(composed.htmlBody()).contains("100.0000");
+        assertThat(composed.textBody()).contains("txn-1");
+    }
+
+    @Test
+    void composesSubscriptionPurchasedMail() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "subscription-purchased",
+                "Your TubeTasks campaign is active",
+                "noreply@tubetasks.in",
+                "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                null,
+                null,
+                java.util.Map.of(
+                        "purchaseId",
+                        "purchase-1",
+                        "planTitle",
+                        "Starter",
+                        "channelTitle",
+                        "My Channel",
+                        "amount",
+                        "199.0000",
+                        "currency",
+                        "INR"));
+        assertThat(composed.htmlBody()).contains("Your campaign is active");
+        assertThat(composed.htmlBody()).contains("Starter");
+        assertThat(composed.textBody()).contains("purchase-1");
+    }
+
+    @Test
+    void composesCampaignCompletedMail() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "campaign-completed",
+                "Your TubeTasks campaign is complete",
+                "noreply@tubetasks.in",
+                "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                null,
+                null,
+                java.util.Map.of(
+                        "purchaseId",
+                        "purchase-1",
+                        "planTitle",
+                        "Starter",
+                        "channelTitle",
+                        "My Channel",
+                        "amount",
+                        "199.0000",
+                        "currency",
+                        "INR"));
+        assertThat(composed.htmlBody()).contains("Your campaign is complete");
+        assertThat(composed.textBody()).contains("subscriber target");
+    }
+
+    @Test
+    void allowsMissingActionUrlForInformationalMail() {
+        mailComposer.validateActionUrl(null);
+        mailComposer.validateActionUrl("");
+    }
+
     private static SpringTemplateEngine htmlEngine() {
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
         resolver.setPrefix("templates/");

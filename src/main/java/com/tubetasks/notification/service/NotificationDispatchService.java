@@ -7,10 +7,13 @@ import com.tubetasks.notification.api.exception.RetryableNotificationException;
 import com.tubetasks.notification.api.exception.ValidationException;
 import com.tubetasks.notification.common.DisplayNameResolver;
 import com.tubetasks.notification.common.NotificationServiceProperties;
+import com.tubetasks.notification.event.AccountActivatedPayload;
+import com.tubetasks.notification.event.CampaignNotificationPayload;
 import com.tubetasks.notification.event.EmailVerificationRequestedPayload;
 import com.tubetasks.notification.event.NotificationEvent;
 import com.tubetasks.notification.event.NotificationEventType;
 import com.tubetasks.notification.event.PasswordResetRequestedPayload;
+import com.tubetasks.notification.event.TransactionNotificationPayload;
 import com.tubetasks.notification.mail.MailComposer;
 import com.tubetasks.notification.mail.SmtpMailSender;
 import com.tubetasks.notification.mail.TemplateRegistry;
@@ -24,7 +27,9 @@ import io.micrometer.core.instrument.Timer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -112,18 +117,20 @@ public class NotificationDispatchService {
             return new DispatchOutcome(event.eventId(), DispatchStatus.EXPIRED, event.serviceRequestId());
         }
 
-        try {
-            mailComposer.validateActionUrl(parsed.actionUrl());
-        } catch (IllegalArgumentException ex) {
-            persistTerminalState(event, parsed, ProcessedEventStatus.FAILED, null, "INVALID_ACTION_URL", ex.getMessage());
-            log.warn(
-                    "Rejected action URL for eventId={} eventType={} url={} reason={}",
-                    event.eventId(),
-                    event.eventType(),
-                    parsed.actionUrl(),
-                    ex.getMessage());
-            notificationMetrics.recordConsumed(event.eventType(), "invalid_action_url");
-            throw new NonRetryableNotificationException("Action URL is not allowed: " + ex.getMessage());
+        if (StringUtils.hasText(parsed.actionUrl())) {
+            try {
+                mailComposer.validateActionUrl(parsed.actionUrl());
+            } catch (IllegalArgumentException ex) {
+                persistTerminalState(event, parsed, ProcessedEventStatus.FAILED, null, "INVALID_ACTION_URL", ex.getMessage());
+                log.warn(
+                        "Rejected action URL for eventId={} eventType={} url={} reason={}",
+                        event.eventId(),
+                        event.eventType(),
+                        parsed.actionUrl(),
+                        ex.getMessage());
+                notificationMetrics.recordConsumed(event.eventType(), "invalid_action_url");
+                throw new NonRetryableNotificationException("Action URL is not allowed: " + ex.getMessage());
+            }
         }
 
         String businessKey = computeBusinessKey(event.eventType(), parsed.userId(), parsed.rawToken());
@@ -166,8 +173,13 @@ public class NotificationDispatchService {
             NotificationEvent event, ParsedNotification parsed, ProcessedEventEntity processing) {
         TemplateRegistry.TemplateDefinition template = templateRegistry.resolve(event.eventType());
         String displayName = DisplayNameResolver.resolve(parsed.displayName(), parsed.email());
-        MailComposer.ComposedMail composed =
-                mailComposer.compose(template, displayName, parsed.email(), parsed.actionUrl(), parsed.tokenExpiresAt());
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                displayName,
+                parsed.email(),
+                parsed.actionUrl(),
+                parsed.tokenExpiresAt(),
+                parsed.extraVariables());
 
         Timer.Sample sample = notificationMetrics.startSendTimer();
         try {
@@ -218,41 +230,19 @@ public class NotificationDispatchService {
 
     private ParsedNotification parsePayload(NotificationEvent event) {
         try {
-            if (NotificationEventType.EMAIL_VERIFICATION_REQUESTED.name().equals(event.eventType())) {
-                EmailVerificationRequestedPayload payload =
-                        objectMapper.convertValue(event.payload(), EmailVerificationRequestedPayload.class);
-                validateCommonPayload(
-                        payload.email(),
-                        payload.userId(),
-                        payload.verificationUrl(),
-                        payload.verificationToken(),
-                        payload.tokenExpiresAt());
-                return new ParsedNotification(
-                        payload.userId(),
-                        payload.displayName(),
-                        payload.email(),
-                        payload.verificationToken(),
-                        payload.verificationUrl(),
-                        payload.tokenExpiresAt());
-            }
-            if (NotificationEventType.PASSWORD_RESET_REQUESTED.name().equals(event.eventType())) {
-                PasswordResetRequestedPayload payload =
-                        objectMapper.convertValue(event.payload(), PasswordResetRequestedPayload.class);
-                validateCommonPayload(
-                        payload.email(),
-                        payload.userId(),
-                        payload.resetUrl(),
-                        payload.resetToken(),
-                        payload.tokenExpiresAt());
-                return new ParsedNotification(
-                        payload.userId(),
-                        payload.displayName(),
-                        payload.email(),
-                        payload.resetToken(),
-                        payload.resetUrl(),
-                        payload.tokenExpiresAt());
-            }
-            throw new RetryableNotificationException("Unsupported known event type during parse: " + event.eventType());
+            NotificationEventType type = NotificationEventType.valueOf(event.eventType());
+            return switch (type) {
+                case EMAIL_VERIFICATION_REQUESTED -> parseEmailVerification(event);
+                case PASSWORD_RESET_REQUESTED -> parsePasswordReset(event);
+                case ACCOUNT_ACTIVATED -> parseAccountActivated(event);
+                case PAYMENT_SUBMITTED,
+                        PAYMENT_APPROVED,
+                        PAYMENT_REJECTED,
+                        WITHDRAWAL_CREATED,
+                        WITHDRAWAL_APPROVED,
+                        WITHDRAWAL_REJECTED -> parseTransaction(event);
+                case SUBSCRIPTION_PURCHASED, CAMPAIGN_COMPLETED -> parseCampaign(event);
+            };
         } catch (ValidationException ex) {
             throw ex;
         } catch (IllegalArgumentException ex) {
@@ -260,14 +250,113 @@ public class NotificationDispatchService {
         }
     }
 
-    private void validateCommonPayload(
+    private ParsedNotification parseEmailVerification(NotificationEvent event) {
+        EmailVerificationRequestedPayload payload =
+                objectMapper.convertValue(event.payload(), EmailVerificationRequestedPayload.class);
+        validateTokenPayload(
+                payload.email(),
+                payload.userId(),
+                payload.verificationUrl(),
+                payload.verificationToken(),
+                payload.tokenExpiresAt());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.verificationToken(),
+                payload.verificationUrl(),
+                payload.tokenExpiresAt(),
+                Map.of());
+    }
+
+    private ParsedNotification parsePasswordReset(NotificationEvent event) {
+        PasswordResetRequestedPayload payload =
+                objectMapper.convertValue(event.payload(), PasswordResetRequestedPayload.class);
+        validateTokenPayload(
+                payload.email(), payload.userId(), payload.resetUrl(), payload.resetToken(), payload.tokenExpiresAt());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.resetToken(),
+                payload.resetUrl(),
+                payload.tokenExpiresAt(),
+                Map.of());
+    }
+
+    private ParsedNotification parseAccountActivated(NotificationEvent event) {
+        AccountActivatedPayload payload = objectMapper.convertValue(event.payload(), AccountActivatedPayload.class);
+        validateRecipient(payload.email(), payload.userId());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                "activated",
+                payload.loginUrl(),
+                null,
+                Map.of());
+    }
+
+    private ParsedNotification parseTransaction(NotificationEvent event) {
+        TransactionNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), TransactionNotificationPayload.class);
+        validateRecipient(payload.email(), payload.userId());
+        if (!StringUtils.hasText(payload.transactionId())) {
+            throw new ValidationException("payload.transactionId is required");
+        }
+        if (!StringUtils.hasText(payload.amount())) {
+            throw new ValidationException("payload.amount is required");
+        }
+        if (!StringUtils.hasText(payload.currency())) {
+            throw new ValidationException("payload.currency is required");
+        }
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("transactionId", payload.transactionId());
+        extras.put("amount", payload.amount());
+        extras.put("currency", payload.currency());
+        extras.put("status", payload.status());
+        extras.put("type", payload.type());
+        extras.put("rejectReason", payload.rejectReason());
+        extras.put("upiId", payload.upiId());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.transactionId(),
+                null,
+                null,
+                extras);
+    }
+
+    private ParsedNotification parseCampaign(NotificationEvent event) {
+        CampaignNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), CampaignNotificationPayload.class);
+        validateRecipient(payload.email(), payload.userId());
+        if (!StringUtils.hasText(payload.purchaseId())) {
+            throw new ValidationException("payload.purchaseId is required");
+        }
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("purchaseId", payload.purchaseId());
+        extras.put("taskId", payload.taskId());
+        extras.put("planTitle", payload.planTitle());
+        extras.put("channelTitle", payload.channelTitle());
+        extras.put("amount", payload.amount());
+        extras.put("currency", payload.currency());
+        extras.put("status", payload.status());
+        extras.put("rejectReason", payload.rejectReason());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.purchaseId(),
+                null,
+                null,
+                extras);
+    }
+
+    private void validateTokenPayload(
             String email, String userId, String actionUrl, String rawToken, Instant tokenExpiresAt) {
-        if (!StringUtils.hasText(email) || email.length() > 320) {
-            throw new ValidationException("payload.email is required and must be at most 320 characters");
-        }
-        if (!StringUtils.hasText(userId)) {
-            throw new ValidationException("payload.userId is required");
-        }
+        validateRecipient(email, userId);
         if (!StringUtils.hasText(actionUrl)) {
             throw new ValidationException("Action URL is required");
         }
@@ -276,6 +365,15 @@ public class NotificationDispatchService {
         }
         if (tokenExpiresAt == null) {
             throw new ValidationException("tokenExpiresAt is required");
+        }
+    }
+
+    private static void validateRecipient(String email, String userId) {
+        if (!StringUtils.hasText(email) || email.length() > 320) {
+            throw new ValidationException("payload.email is required and must be at most 320 characters");
+        }
+        if (!StringUtils.hasText(userId)) {
+            throw new ValidationException("payload.userId is required");
         }
     }
 
@@ -434,7 +532,8 @@ public class NotificationDispatchService {
             String email,
             String rawToken,
             String actionUrl,
-            Instant tokenExpiresAt) {}
+            Instant tokenExpiresAt,
+            Map<String, Object> extraVariables) {}
 
     public enum DispatchStatus {
         SENT,

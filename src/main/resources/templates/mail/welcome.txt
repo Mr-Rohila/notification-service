@@ -1,0 +1,15 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+Your TubeTasks profile is ready. You can now log in and start using your account.
+
+[# th:if="${actionUrl != null}"]
+Log in here: [( ${actionUrl} )]
+[/]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

@@ -1,0 +1,17 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+Your deposit request was not approved. No funds were added to your wallet.
+
+Amount: [( ${amount} )] [( ${currency} )]
+Reference: [( ${transactionId} )]
+[# th:if="${rejectReason != null}"]
+Reason: [( ${rejectReason} )]
+[/]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

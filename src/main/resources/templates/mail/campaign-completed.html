@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Campaign complete | TubeTasks', ~{::section})}">
+<section>
+    <h1>Your campaign is complete</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>Your TubeTasks campaign has reached its subscriber target and is now complete.</p>
+    <p th:if="${planTitle != null}">Plan: <strong th:text="${planTitle}">plan</strong></p>
+    <p th:if="${channelTitle != null}">Channel: <span th:text="${channelTitle}">channel</span></p>
+    <p th:if="${amount != null}">
+        Amount: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p>Campaign: <span th:text="${purchaseId}">purchase-id</span></p>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

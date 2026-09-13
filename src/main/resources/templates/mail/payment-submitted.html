@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Deposit request received | TubeTasks', ~{::section})}">
+<section>
+    <h1>Deposit request received</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>We received your deposit request and it is now pending review.</p>
+    <p>
+        Amount: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p>Reference: <span th:text="${transactionId}">txn-id</span></p>
+    <p>We will email you again when the request is approved or rejected.</p>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

@@ -21,6 +21,10 @@ class TemplateRegistryTests {
         verification.setName("registration-verification");
         verification.setSubject("Verify your TubeTasks email");
         properties.getTemplates().put("EMAIL_VERIFICATION_REQUESTED", verification);
+        NotificationServiceProperties.TemplateDefinition welcome = new NotificationServiceProperties.TemplateDefinition();
+        welcome.setName("welcome");
+        welcome.setSubject("Welcome to TubeTasks — your account is ready");
+        properties.getTemplates().put("ACCOUNT_ACTIVATED", welcome);
         templateRegistry = new TemplateRegistry(properties);
     }
 
@@ -31,6 +35,13 @@ class TemplateRegistryTests {
         assertThat(definition.templateName()).isEqualTo("registration-verification");
         assertThat(definition.subject()).isEqualTo("Verify your TubeTasks email");
         assertThat(definition.fromEmail()).isEqualTo("noreply@tubetasks.in");
+    }
+
+    @Test
+    void resolvesWelcomeTemplate() {
+        TemplateRegistry.TemplateDefinition definition = templateRegistry.resolve("ACCOUNT_ACTIVATED");
+        assertThat(definition.templateName()).isEqualTo("welcome");
+        assertThat(definition.subject()).isEqualTo("Welcome to TubeTasks — your account is ready");
     }
 
     @Test

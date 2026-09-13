@@ -1,0 +1,19 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+We received your withdrawal request and it is now pending review.
+
+Amount: [( ${amount} )] [( ${currency} )]
+Reference: [( ${transactionId} )]
+[# th:if="${upiId != null}"]
+Payout UPI: [( ${upiId} )]
+[/]
+
+We will email you again when the request is approved or rejected.
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

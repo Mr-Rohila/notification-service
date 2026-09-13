@@ -1,0 +1,14 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+Your deposit has been approved and credited to your TubeTasks wallet.
+
+Amount: [( ${amount} )] [( ${currency} )]
+Reference: [( ${transactionId} )]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

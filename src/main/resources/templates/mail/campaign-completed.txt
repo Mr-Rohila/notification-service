@@ -1,0 +1,22 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+Your TubeTasks campaign has reached its subscriber target and is now complete.
+
+[# th:if="${planTitle != null}"]
+Plan: [( ${planTitle} )]
+[/]
+[# th:if="${channelTitle != null}"]
+Channel: [( ${channelTitle} )]
+[/]
+[# th:if="${amount != null}"]
+Amount: [( ${amount} )] [# th:if="${currency != null}"][( ${currency} )][/]
+[/]
+Campaign: [( ${purchaseId} )]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]
