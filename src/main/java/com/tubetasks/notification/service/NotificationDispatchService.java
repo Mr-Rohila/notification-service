@@ -126,7 +126,7 @@ public class NotificationDispatchService {
                         "Rejected action URL for eventId={} eventType={} url={} reason={}",
                         event.eventId(),
                         event.eventType(),
-                        parsed.actionUrl(),
+                        actionUrlWithoutQuery(parsed.actionUrl()),
                         ex.getMessage());
                 notificationMetrics.recordConsumed(event.eventType(), "invalid_action_url");
                 throw new NonRetryableNotificationException("Action URL is not allowed: " + ex.getMessage());
@@ -524,6 +524,14 @@ public class NotificationDispatchService {
             return null;
         }
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
+    private static String actionUrlWithoutQuery(String actionUrl) {
+        if (actionUrl == null) {
+            return null;
+        }
+        int queryStart = actionUrl.indexOf('?');
+        return queryStart < 0 ? actionUrl : actionUrl.substring(0, queryStart);
     }
 
     public record ParsedNotification(
