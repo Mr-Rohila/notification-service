@@ -11,7 +11,8 @@ public enum NotificationEventType {
     WITHDRAWAL_APPROVED,
     WITHDRAWAL_REJECTED,
     SUBSCRIPTION_PURCHASED,
-    CAMPAIGN_COMPLETED;
+    CAMPAIGN_COMPLETED,
+    ADMIN_WALLET_CREDITED;
 
     public static boolean isKnown(String eventType) {
         if (eventType == null) {

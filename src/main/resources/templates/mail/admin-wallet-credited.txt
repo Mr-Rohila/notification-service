@@ -1,0 +1,15 @@
+[# th:insert="~{mail/fragments/email-header}" /]
+
+Hi [( ${displayName} )],
+
+₹[( ${amount} )] was added to your TubeTasks wallet by support.
+
+Added by TubeTasks support.
+
+Amount: [( ${amount} )] [( ${currency} )]
+
+[# th:if="${supportEmail != null}"]
+Need help? Contact us at [( ${supportEmail} )].
+[/]
+
+[# th:insert="~{mail/fragments/email-footer}" /]

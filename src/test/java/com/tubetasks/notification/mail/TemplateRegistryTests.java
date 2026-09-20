@@ -50,4 +50,9 @@ class TemplateRegistryTests {
         assertThatThrownBy(() -> templateRegistry.resolve("UNKNOWN"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void adminWalletCreditedIsAKnownEventType() {
+        assertThat(templateRegistry.isKnownEventType("ADMIN_WALLET_CREDITED")).isTrue();
+    }
 }

@@ -95,6 +95,9 @@ notification-service:
     CAMPAIGN_COMPLETED:
       name: campaign-completed
       subject: Your TubeTasks campaign is complete
+    ADMIN_WALLET_CREDITED:
+      name: admin-wallet-credited
+      subject: Wallet credited
   retention:
     processed-event-days: 30
     delivery-days: 90

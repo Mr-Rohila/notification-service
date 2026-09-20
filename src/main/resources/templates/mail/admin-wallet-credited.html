@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Wallet credited | TubeTasks', ~{::section})}">
+<section>
+    <h1>Wallet credited</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>₹<span th:text="${amount}">0.00</span> was added to your TubeTasks wallet by support.</p>
+    <p>Added by TubeTasks support.</p>
+    <p>
+        Amount: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

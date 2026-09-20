@@ -75,6 +75,24 @@ class MailComposerTests {
     }
 
     @Test
+    void composesAdminWalletCreditedMail() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "admin-wallet-credited", "Wallet credited", "noreply@tubetasks.in", "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                null,
+                null,
+                java.util.Map.of("amount", "500.0000", "currency", "INR"));
+        assertThat(composed.htmlBody()).contains("Wallet credited");
+        assertThat(composed.htmlBody()).contains("500.0000");
+        assertThat(composed.htmlBody()).contains("Added by TubeTasks support");
+        assertThat(composed.textBody()).contains("500.0000");
+        assertThat(composed.textBody()).contains("Added by TubeTasks support");
+    }
+
+    @Test
     void composesSubscriptionPurchasedMail() {
         TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
                 "subscription-purchased",

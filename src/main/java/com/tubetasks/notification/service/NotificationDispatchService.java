@@ -240,7 +240,8 @@ public class NotificationDispatchService {
                         PAYMENT_REJECTED,
                         WITHDRAWAL_CREATED,
                         WITHDRAWAL_APPROVED,
-                        WITHDRAWAL_REJECTED -> parseTransaction(event);
+                        WITHDRAWAL_REJECTED,
+                        ADMIN_WALLET_CREDITED -> parseTransaction(event);
                 case SUBSCRIPTION_PURCHASED, CAMPAIGN_COMPLETED -> parseCampaign(event);
             };
         } catch (ValidationException ex) {

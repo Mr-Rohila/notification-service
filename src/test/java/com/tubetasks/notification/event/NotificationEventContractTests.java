@@ -183,4 +183,40 @@ class NotificationEventContractTests {
         assertThat(payload.channelTitle()).isEqualTo("My Channel");
         assertThat(payload.amount()).isEqualTo("199.0000");
     }
+
+    @Test
+    void deserializesAdminWalletCreditedEvent() throws Exception {
+        String json =
+                """
+                {
+                  "eventId": "33333333-3333-3333-3333-333333333333",
+                  "eventType": "ADMIN_WALLET_CREDITED",
+                  "eventVersion": 1,
+                  "occurredAt": "2026-09-20T08:15:00Z",
+                  "source": "user-service",
+                  "serviceRequestId": "req-admin-credit-1",
+                  "payload": {
+                    "userId": "0194a2b3-c4d5-7890-abcd-ef1234567890",
+                    "displayName": "Jane Doe",
+                    "email": "user@example.com",
+                    "transactionId": "txn-admin-1",
+                    "amount": "500.0000",
+                    "currency": "INR",
+                    "status": "APPROVED",
+                    "type": "CREDIT"
+                  }
+                }
+                """;
+
+        NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
+        TransactionNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), TransactionNotificationPayload.class);
+
+        assertThat(event.eventType()).isEqualTo("ADMIN_WALLET_CREDITED");
+        assertThat(NotificationEventType.isKnown("ADMIN_WALLET_CREDITED")).isTrue();
+        assertThat(payload.amount()).isEqualTo("500.0000");
+        assertThat(payload.transactionId()).isEqualTo("txn-admin-1");
+        assertThat(payload.status()).isEqualTo("APPROVED");
+        assertThat(payload.type()).isEqualTo("CREDIT");
+    }
 }
