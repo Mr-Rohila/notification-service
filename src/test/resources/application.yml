@@ -61,6 +61,8 @@ notification-service:
     from-name: TubeTasks
     allowed-action-url-prefixes:
       - http://localhost:9000/auth
+      - http://localhost:4200
+    app-home-url: http://localhost:4200
   templates:
     EMAIL_VERIFICATION_REQUESTED:
       name: registration-verification
@@ -95,6 +97,9 @@ notification-service:
     CAMPAIGN_COMPLETED:
       name: campaign-completed
       subject: Your TubeTasks campaign is complete
+    TASK_ASSIGNED:
+      name: task-assigned
+      subject: You have a new TubeTasks task
     ADMIN_WALLET_CREDITED:
       name: admin-wallet-credited
       subject: Wallet credited

@@ -18,7 +18,8 @@ class MailComposerTests {
     @BeforeEach
     void setUp() {
         NotificationServiceProperties properties = new NotificationServiceProperties();
-        properties.getMail().setAllowedActionUrlPrefixes(java.util.List.of("http://localhost:9000/auth"));
+        properties.getMail().setAllowedActionUrlPrefixes(
+                java.util.List.of("http://localhost:9000/auth", "http://localhost:4200"));
         mailComposer = new MailComposer(htmlEngine(), textEngine(), properties);
     }
 
@@ -147,6 +148,40 @@ class MailComposerTests {
                         "INR"));
         assertThat(composed.htmlBody()).contains("Your campaign is complete");
         assertThat(composed.textBody()).contains("subscriber target");
+    }
+
+    @Test
+    void composesTaskAssignedMail() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "task-assigned",
+                "You have a new TubeTasks task",
+                "noreply@tubetasks.in",
+                "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                "http://localhost:4200",
+                null,
+                java.util.Map.of(
+                        "planTitle",
+                        "Starter",
+                        "channelTitle",
+                        "My Channel",
+                        "channelUrl",
+                        "https://youtube.com/@mychannel",
+                        "amount",
+                        "5.0000",
+                        "currency",
+                        "INR"));
+        assertThat(composed.htmlBody()).contains("You have a new task");
+        assertThat(composed.htmlBody()).contains("My Channel");
+        assertThat(composed.htmlBody()).contains("https://youtube.com/@mychannel");
+        assertThat(composed.htmlBody()).contains("5.0000");
+        assertThat(composed.htmlBody()).contains("Open TubeTasks");
+        assertThat(composed.htmlBody()).contains("http://localhost:4200");
+        assertThat(composed.textBody()).contains("assigned to you");
+        assertThat(composed.textBody()).contains("http://localhost:4200");
     }
 
     @Test

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('New task assigned | TubeTasks', ~{::section})}">
+<section>
+    <h1>You have a new task</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>A TubeTasks subscribe task has been assigned to you. Open the channel, subscribe, then upload your proof from TubeTasks.</p>
+    <p th:if="${channelTitle != null}">Channel: <strong th:text="${channelTitle}">channel</strong></p>
+    <p th:if="${channelUrl != null}">
+        YouTube:
+        <a th:href="${channelUrl}" th:text="${channelUrl}">https://youtube.com</a>
+    </p>
+    <p th:if="${amount != null}">
+        Reward: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p th:if="${planTitle != null}">Plan: <span th:text="${planTitle}">plan</span></p>
+    <div class="button-container" th:if="${actionUrl != null}">
+        <a th:href="${actionUrl}" class="button" style="color: #ffffff;">Open TubeTasks</a>
+    </div>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

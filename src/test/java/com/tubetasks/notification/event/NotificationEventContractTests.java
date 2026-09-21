@@ -185,6 +185,45 @@ class NotificationEventContractTests {
     }
 
     @Test
+    void deserializesTaskAssignedEventFromTaskServiceFixture() throws Exception {
+        String json =
+                """
+                {
+                  "eventId": "44444444-4444-4444-4444-444444444444",
+                  "eventType": "TASK_ASSIGNED",
+                  "eventVersion": 1,
+                  "occurredAt": "2026-09-06T15:00:00Z",
+                  "source": "task-service",
+                  "serviceRequestId": "req-1",
+                  "payload": {
+                    "userId": "0194a2b3-c4d5-7890-abcd-ef1234567890",
+                    "displayName": "Jane Doe",
+                    "email": "user@example.com",
+                    "purchaseId": "purchase-1",
+                    "taskId": "task-1",
+                    "planTitle": "Starter",
+                    "channelTitle": "My Channel",
+                    "channelUrl": "https://youtube.com/@mychannel",
+                    "amount": "5.0000",
+                    "currency": "INR",
+                    "status": "ASSIGNED"
+                  }
+                }
+                """;
+
+        NotificationEvent event = objectMapper.readValue(json, NotificationEvent.class);
+        CampaignNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), CampaignNotificationPayload.class);
+
+        assertThat(event.eventType()).isEqualTo("TASK_ASSIGNED");
+        assertThat(NotificationEventType.isKnown("TASK_ASSIGNED")).isTrue();
+        assertThat(payload.taskId()).isEqualTo("task-1");
+        assertThat(payload.channelTitle()).isEqualTo("My Channel");
+        assertThat(payload.channelUrl()).isEqualTo("https://youtube.com/@mychannel");
+        assertThat(payload.amount()).isEqualTo("5.0000");
+    }
+
+    @Test
     void deserializesAdminWalletCreditedEvent() throws Exception {
         String json =
                 """

@@ -168,6 +168,21 @@ class NotificationDispatchIntegrationTest {
         assertThat(message.getSubject()).contains("campaign is complete");
     }
 
+    @Test
+    void consumesTaskAssignedEventAndSendsOneEmail() throws Exception {
+        NotificationEvent event = taskAssignedEvent("event-task-1", "task-1");
+        inputDestination.send(MessageBuilder.withPayload(event).build(), "tubetasks.notification.events");
+
+        assertThat(greenMail.getReceivedMessages()).hasSize(1);
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+        assertThat(message.getSubject()).contains("new TubeTasks task");
+        assertThat(processedEventRepository.findByEventId("event-task-1"))
+                .isPresent()
+                .get()
+                .extracting(entity -> entity.getStatus())
+                .isEqualTo(ProcessedEventStatus.SENT);
+    }
+
     private static NotificationEvent verificationEvent(String eventId, String token) {
         EmailVerificationRequestedPayload payload = new EmailVerificationRequestedPayload(
                 "user-123",
@@ -234,6 +249,7 @@ class NotificationDispatchIntegrationTest {
                 null,
                 "Starter",
                 "My Channel",
+                null,
                 "199.0000",
                 "INR",
                 "ACTIVE",
@@ -251,11 +267,30 @@ class NotificationDispatchIntegrationTest {
                 null,
                 "Starter",
                 "My Channel",
+                null,
                 "199.0000",
                 "INR",
                 "COMPLETED",
                 null);
         return new NotificationEvent(
                 eventId, "CAMPAIGN_COMPLETED", 1, Instant.now(), "task-service", "req-test", payload);
+    }
+
+    private static NotificationEvent taskAssignedEvent(String eventId, String taskId) {
+        CampaignNotificationPayload payload = new CampaignNotificationPayload(
+                "user-123",
+                "Jane Doe",
+                "jane@example.com",
+                "purchase-1",
+                taskId,
+                "Starter",
+                "My Channel",
+                "https://youtube.com/@mychannel",
+                "5.0000",
+                "INR",
+                "ASSIGNED",
+                null);
+        return new NotificationEvent(
+                eventId, "TASK_ASSIGNED", 1, Instant.now(), "task-service", "req-test", payload);
     }
 }

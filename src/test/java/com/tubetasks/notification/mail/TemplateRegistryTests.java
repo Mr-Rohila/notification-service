@@ -55,4 +55,9 @@ class TemplateRegistryTests {
     void adminWalletCreditedIsAKnownEventType() {
         assertThat(templateRegistry.isKnownEventType("ADMIN_WALLET_CREDITED")).isTrue();
     }
+
+    @Test
+    void taskAssignedIsAKnownEventType() {
+        assertThat(templateRegistry.isKnownEventType("TASK_ASSIGNED")).isTrue();
+    }
 }

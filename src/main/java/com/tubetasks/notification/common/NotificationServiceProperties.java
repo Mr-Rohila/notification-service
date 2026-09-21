@@ -60,6 +60,7 @@ public class NotificationServiceProperties {
         private String fromName;
         private List<String> allowedActionUrlPrefixes = new ArrayList<>();
         private String supportEmail;
+        private String appHomeUrl;
 
         public String getFrom() {
             return from;
@@ -91,6 +92,14 @@ public class NotificationServiceProperties {
 
         public void setSupportEmail(String supportEmail) {
             this.supportEmail = supportEmail;
+        }
+
+        public String getAppHomeUrl() {
+            return appHomeUrl;
+        }
+
+        public void setAppHomeUrl(String appHomeUrl) {
+            this.appHomeUrl = appHomeUrl;
         }
     }
 

@@ -13,6 +13,7 @@ public record CampaignNotificationPayload(
         String taskId,
         String planTitle,
         String channelTitle,
+        String channelUrl,
         String amount,
         String currency,
         String status,

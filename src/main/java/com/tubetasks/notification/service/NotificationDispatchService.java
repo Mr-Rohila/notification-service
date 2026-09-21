@@ -243,6 +243,7 @@ public class NotificationDispatchService {
                         WITHDRAWAL_REJECTED,
                         ADMIN_WALLET_CREDITED -> parseTransaction(event);
                 case SUBSCRIPTION_PURCHASED, CAMPAIGN_COMPLETED -> parseCampaign(event);
+                case TASK_ASSIGNED -> parseTaskAssigned(event);
             };
         } catch (ValidationException ex) {
             throw ex;
@@ -341,6 +342,7 @@ public class NotificationDispatchService {
         extras.put("taskId", payload.taskId());
         extras.put("planTitle", payload.planTitle());
         extras.put("channelTitle", payload.channelTitle());
+        extras.put("channelUrl", payload.channelUrl());
         extras.put("amount", payload.amount());
         extras.put("currency", payload.currency());
         extras.put("status", payload.status());
@@ -351,6 +353,33 @@ public class NotificationDispatchService {
                 payload.email(),
                 payload.purchaseId(),
                 null,
+                null,
+                extras);
+    }
+
+    private ParsedNotification parseTaskAssigned(NotificationEvent event) {
+        CampaignNotificationPayload payload =
+                objectMapper.convertValue(event.payload(), CampaignNotificationPayload.class);
+        validateRecipient(payload.email(), payload.userId());
+        if (!StringUtils.hasText(payload.taskId())) {
+            throw new ValidationException("payload.taskId is required");
+        }
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("purchaseId", payload.purchaseId());
+        extras.put("taskId", payload.taskId());
+        extras.put("planTitle", payload.planTitle());
+        extras.put("channelTitle", payload.channelTitle());
+        extras.put("channelUrl", payload.channelUrl());
+        extras.put("amount", payload.amount());
+        extras.put("currency", payload.currency());
+        extras.put("status", payload.status());
+        String homeUrl = properties.getMail().getAppHomeUrl();
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.taskId(),
+                StringUtils.hasText(homeUrl) ? homeUrl.trim() : null,
                 null,
                 extras);
     }
