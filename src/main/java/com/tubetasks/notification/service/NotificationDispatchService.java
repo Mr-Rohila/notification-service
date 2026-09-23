@@ -241,7 +241,7 @@ public class NotificationDispatchService {
                         WITHDRAWAL_CREATED,
                         WITHDRAWAL_APPROVED,
                         WITHDRAWAL_REJECTED,
-                        ADMIN_WALLET_CREDITED -> parseTransaction(event);
+                        ADMIN_WALLET_CREDITED, REFERRAL_REWARD_CREDITED -> parseTransaction(event);
                 case SUBSCRIPTION_PURCHASED, CAMPAIGN_COMPLETED -> parseCampaign(event);
                 case TASK_ASSIGNED -> parseTaskAssigned(event);
             };

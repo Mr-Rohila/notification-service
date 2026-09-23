@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('Referral reward credited | TubeTasks', ~{::section})}">
+<section>
+    <h1>Referral reward credited</h1>
+    <p th:text="'Hi, ' + ${displayName}">Hi,</p>
+    <p>A referral reward was added to your available balance.</p>
+    <p>
+        Amount: <strong th:text="${amount} + ' ' + ${currency}">0.00 INR</strong>
+    </p>
+    <p th:if="${supportEmail != null}">Need help? Contact us at <span th:text="${supportEmail}">support</span>.</p>
+</section>
+</html>

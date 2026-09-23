@@ -103,6 +103,9 @@ notification-service:
     ADMIN_WALLET_CREDITED:
       name: admin-wallet-credited
       subject: Wallet credited
+    REFERRAL_REWARD_CREDITED:
+      name: referral-reward-credited
+      subject: Referral reward credited
   retention:
     processed-event-days: 30
     delivery-days: 90

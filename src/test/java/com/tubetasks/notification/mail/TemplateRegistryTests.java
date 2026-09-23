@@ -54,6 +54,7 @@ class TemplateRegistryTests {
     @Test
     void adminWalletCreditedIsAKnownEventType() {
         assertThat(templateRegistry.isKnownEventType("ADMIN_WALLET_CREDITED")).isTrue();
+        assertThat(templateRegistry.isKnownEventType("REFERRAL_REWARD_CREDITED")).isTrue();
     }
 
     @Test
