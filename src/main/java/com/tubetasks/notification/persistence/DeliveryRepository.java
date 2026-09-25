@@ -12,7 +12,14 @@ public interface DeliveryRepository extends JpaRepository<DeliveryEntity, String
 
     java.util.Optional<DeliveryEntity> findFirstByEventId(String eventId);
 
-    java.util.List<DeliveryEntity> findByCallbackStatusAndCallbackAttemptsLessThan(String callbackStatus, int attempts);
+    @Query(
+            """
+            select d from DeliveryEntity d
+            where (d.callbackStatus = 'PENDING' and d.callbackAttempts < :pendingMax)
+               or (d.callbackStatus = 'FAILED' and d.status = 'SENT' and d.callbackAttempts < :failedMax)
+            """)
+    java.util.List<DeliveryEntity> findCallbacksToRetry(
+            @Param("pendingMax") int pendingMax, @Param("failedMax") int failedMax);
 
     @Modifying
     @Query("delete from DeliveryEntity d where d.createdAt < :cutoff")

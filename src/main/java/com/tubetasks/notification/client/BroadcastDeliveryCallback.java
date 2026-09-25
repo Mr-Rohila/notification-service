@@ -4,6 +4,7 @@ import com.tubetasks.notification.common.NotificationServiceProperties;
 import com.tubetasks.notification.common.ServiceRequestIdFilter;
 import com.tubetasks.notification.persistence.DeliveryEntity;
 import com.tubetasks.notification.persistence.DeliveryRepository;
+import java.net.URI;
 import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,16 +21,19 @@ public class BroadcastDeliveryCallback {
     private static final int MAX_ATTEMPTS = 8;
 
     private final RestClient restClient;
+    private final ServiceAddressResolver addressResolver;
     private final NotificationAuthTokenClient tokenClient;
     private final NotificationServiceProperties properties;
     private final DeliveryRepository deliveryRepository;
 
     public BroadcastDeliveryCallback(
             RestClient.Builder builder,
+            ServiceAddressResolver addressResolver,
             NotificationAuthTokenClient tokenClient,
             NotificationServiceProperties properties,
             DeliveryRepository deliveryRepository) {
         this.restClient = builder.build();
+        this.addressResolver = addressResolver;
         this.tokenClient = tokenClient;
         this.properties = properties;
         this.deliveryRepository = deliveryRepository;
@@ -60,7 +64,8 @@ public class BroadcastDeliveryCallback {
         try {
             String base = properties.getUserService().getBaseUrl();
             String path = properties.getUserService().getDeliveryPath();
-            String url = base.endsWith("/") ? base.substring(0, base.length() - 1) + path : base + path;
+            String rawUrl = base.endsWith("/") ? base.substring(0, base.length() - 1) + path : base + path;
+            URI url = addressResolver.resolve(rawUrl);
             java.util.HashMap<String, Object> body = new java.util.HashMap<>();
             body.put("eventId", eventId);
             body.put("status", status);
@@ -85,14 +90,17 @@ public class BroadcastDeliveryCallback {
             delivery.setCallbackAttempts(attempts);
             delivery.setCallbackStatus(attempts >= MAX_ATTEMPTS ? "FAILED" : "PENDING");
             deliveryRepository.save(delivery);
-            log.warn("operation=broadcast_callback eventId={} outcome=retry attempt={}", eventId, attempts);
+            log.warn(
+                    "operation=broadcast_callback eventId={} outcome=retry attempt={} error={}",
+                    eventId,
+                    attempts,
+                    ex.getClass().getSimpleName());
         }
     }
 
     @Scheduled(fixedDelayString = "${notification-service.callback-retry-delay:30s}")
     public void retryPending() {
-        for (DeliveryEntity delivery :
-                deliveryRepository.findByCallbackStatusAndCallbackAttemptsLessThan("PENDING", MAX_ATTEMPTS)) {
+        for (DeliveryEntity delivery : deliveryRepository.findCallbacksToRetry(MAX_ATTEMPTS, MAX_ATTEMPTS * 2)) {
             dispatch(delivery.getEventId(), delivery.getStatus(), delivery.getErrorCode());
         }
     }

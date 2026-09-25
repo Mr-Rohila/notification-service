@@ -17,12 +17,17 @@ import org.springframework.web.client.RestClient;
 public class NotificationAuthTokenClient {
 
     private final RestClient restClient;
+    private final ServiceAddressResolver addressResolver;
     private final NotificationServiceProperties properties;
     private final AtomicReference<CachedToken> cachedToken = new AtomicReference<>();
     private final ReentrantLock refreshLock = new ReentrantLock();
 
-    public NotificationAuthTokenClient(RestClient.Builder builder, NotificationServiceProperties properties) {
+    public NotificationAuthTokenClient(
+            RestClient.Builder builder,
+            ServiceAddressResolver addressResolver,
+            NotificationServiceProperties properties) {
         this.restClient = builder.build();
+        this.addressResolver = addressResolver;
         this.properties = properties;
     }
 
@@ -46,7 +51,7 @@ public class NotificationAuthTokenClient {
             form.add("scope", userService.getScope());
             TokenResponse response = restClient
                     .post()
-                    .uri(userService.getTokenUrl())
+                    .uri(addressResolver.resolve(userService.getTokenUrl()))
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .headers(headers -> headers.setBasicAuth(userService.getClientId(), userService.getClientSecret()))
                     .body(form)
