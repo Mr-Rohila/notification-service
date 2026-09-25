@@ -23,7 +23,7 @@ public class SmtpMailSender {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(composedMail.template().fromEmail(), composedMail.template().fromName());
             helper.setTo(composedMail.recipientEmail());
-            helper.setSubject(composedMail.template().subject());
+            helper.setSubject(composedMail.subject());
             helper.setText(composedMail.textBody(), composedMail.htmlBody());
             String serviceRequestId = MDC.get(ServiceRequestIdFilter.SERVICE_REQUEST_ID);
             if (serviceRequestId != null) {

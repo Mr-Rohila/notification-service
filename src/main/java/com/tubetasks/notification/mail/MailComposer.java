@@ -68,7 +68,20 @@ public class MailComposer {
         context.setVariables(variables);
         String html = htmlTemplateEngine.process("mail/" + template.templateName(), context);
         String text = textTemplateEngine.process("mail/" + template.templateName(), context);
-        return new ComposedMail(template, email, html, text);
+        return new ComposedMail(template, email, html, text, null);
+    }
+
+    public ComposedMail compose(
+            TemplateRegistry.TemplateDefinition template,
+            String displayName,
+            String email,
+            String actionUrl,
+            Instant tokenExpiresAt,
+            Map<String, Object> extraVariables,
+            String subjectOverride) {
+        ComposedMail composed = compose(template, displayName, email, actionUrl, tokenExpiresAt, extraVariables);
+        return new ComposedMail(
+                composed.template(), composed.recipientEmail(), composed.htmlBody(), composed.textBody(), subjectOverride);
     }
 
     public void validateActionUrl(String actionUrl) {
@@ -89,5 +102,17 @@ public class MailComposer {
     }
 
     public record ComposedMail(
-            TemplateRegistry.TemplateDefinition template, String recipientEmail, String htmlBody, String textBody) {}
+            TemplateRegistry.TemplateDefinition template,
+            String recipientEmail,
+            String htmlBody,
+            String textBody,
+            String subjectOverride) {
+
+        public String subject() {
+            if (subjectOverride != null && !subjectOverride.isBlank()) {
+                return subjectOverride;
+            }
+            return template.subject();
+        }
+    }
 }

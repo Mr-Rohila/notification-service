@@ -1,5 +1,6 @@
 package com.tubetasks.notification.common;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +15,8 @@ public class NotificationServiceProperties {
     private Retention retention = new Retention();
     private boolean consumerEnabled = true;
     private boolean sendEnabled = false;
+    private UserService userService = new UserService();
+    private Duration callbackRetryDelay = Duration.ofSeconds(30);
 
     public Mail getMail() {
         return mail;
@@ -151,6 +154,79 @@ public class NotificationServiceProperties {
 
         public void setCleanupCron(String cleanupCron) {
             this.cleanupCron = cleanupCron;
+        }
+    }
+
+    public UserService getUserService() {
+        return userService;
+    }
+
+    public void setUserService(UserService userService) {
+        this.userService = userService;
+    }
+
+    public Duration getCallbackRetryDelay() {
+        return callbackRetryDelay;
+    }
+
+    public void setCallbackRetryDelay(Duration callbackRetryDelay) {
+        this.callbackRetryDelay = callbackRetryDelay;
+    }
+
+    public static class UserService {
+        private String baseUrl = "lb://user-service/user";
+        private String deliveryPath = "/internal/api/v1/broadcasts/delivery";
+        private String tokenUrl = "lb://auth-server/auth/oauth2/token";
+        private String clientId = "notification-service";
+        private String clientSecret = "";
+        private String scope = "internal.call";
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getDeliveryPath() {
+            return deliveryPath;
+        }
+
+        public void setDeliveryPath(String deliveryPath) {
+            this.deliveryPath = deliveryPath;
+        }
+
+        public String getTokenUrl() {
+            return tokenUrl;
+        }
+
+        public void setTokenUrl(String tokenUrl) {
+            this.tokenUrl = tokenUrl;
+        }
+
+        public String getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(String clientId) {
+            this.clientId = clientId;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getScope() {
+            return scope;
+        }
+
+        public void setScope(String scope) {
+            this.scope = scope;
         }
     }
 }

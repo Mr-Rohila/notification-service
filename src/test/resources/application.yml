@@ -106,12 +106,16 @@ notification-service:
     REFERRAL_REWARD_CREDITED:
       name: referral-reward-credited
       subject: Referral reward credited
+    ADMIN_BROADCAST:
+      name: admin-broadcast
+      subject: TubeTasks
   retention:
     processed-event-days: 30
     delivery-days: 90
     cleanup-cron: "0 30 3 * * *"
   consumer-enabled: true
   send-enabled: false
+  callback-retry-delay: 30m
 
 management:
   endpoints:

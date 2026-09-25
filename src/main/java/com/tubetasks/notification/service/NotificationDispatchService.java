@@ -5,9 +5,11 @@ import com.tubetasks.notification.api.exception.EmailDeliveryException;
 import com.tubetasks.notification.api.exception.NonRetryableNotificationException;
 import com.tubetasks.notification.api.exception.RetryableNotificationException;
 import com.tubetasks.notification.api.exception.ValidationException;
+import com.tubetasks.notification.client.BroadcastDeliveryCallback;
 import com.tubetasks.notification.common.DisplayNameResolver;
 import com.tubetasks.notification.common.NotificationServiceProperties;
 import com.tubetasks.notification.event.AccountActivatedPayload;
+import com.tubetasks.notification.event.AdminBroadcastPayload;
 import com.tubetasks.notification.event.CampaignNotificationPayload;
 import com.tubetasks.notification.event.EmailVerificationRequestedPayload;
 import com.tubetasks.notification.event.NotificationEvent;
@@ -52,6 +54,7 @@ public class NotificationDispatchService {
     private final DeliveryRepository deliveryRepository;
     private final NotificationMetrics notificationMetrics;
     private final NotificationServiceProperties properties;
+    private final BroadcastDeliveryCallback broadcastCallback;
 
     public NotificationDispatchService(
             ObjectMapper objectMapper,
@@ -61,7 +64,8 @@ public class NotificationDispatchService {
             ProcessedEventRepository processedEventRepository,
             DeliveryRepository deliveryRepository,
             NotificationMetrics notificationMetrics,
-            NotificationServiceProperties properties) {
+            NotificationServiceProperties properties,
+            BroadcastDeliveryCallback broadcastCallback) {
         this.objectMapper = objectMapper;
         this.templateRegistry = templateRegistry;
         this.mailComposer = mailComposer;
@@ -70,6 +74,7 @@ public class NotificationDispatchService {
         this.deliveryRepository = deliveryRepository;
         this.notificationMetrics = notificationMetrics;
         this.properties = properties;
+        this.broadcastCallback = broadcastCallback;
         if (!properties.isSendEnabled()) {
             log.warn(
                     "notification-service.send-enabled=false; emails will be marked SENT without SMTP delivery");
@@ -173,13 +178,21 @@ public class NotificationDispatchService {
             NotificationEvent event, ParsedNotification parsed, ProcessedEventEntity processing) {
         TemplateRegistry.TemplateDefinition template = templateRegistry.resolve(event.eventType());
         String displayName = DisplayNameResolver.resolve(parsed.displayName(), parsed.email());
+        String subjectOverride = adminSubjectOverride(event, parsed);
         MailComposer.ComposedMail composed = mailComposer.compose(
                 template,
                 displayName,
                 parsed.email(),
                 parsed.actionUrl(),
                 parsed.tokenExpiresAt(),
-                parsed.extraVariables());
+                parsed.extraVariables(),
+                subjectOverride);
+
+        if (isAdminBroadcast(event) && !properties.isSendEnabled()) {
+            markAdminSkipped(event, parsed, composed);
+            notificationMetrics.recordConsumed(event.eventType(), "skipped");
+            return new DispatchOutcome(event.eventId(), DispatchStatus.SKIPPED, event.serviceRequestId());
+        }
 
         Timer.Sample sample = notificationMetrics.startSendTimer();
         try {
@@ -202,6 +215,9 @@ public class NotificationDispatchService {
         }
 
         markSent(processing, composed);
+        if (isAdminBroadcast(event)) {
+            broadcastCallback.pendingAfterSend(processing.getEventId(), null);
+        }
         log.info(
                 "Sent email eventId={} eventType={} userId={} template={} outcome=sent delivery={}",
                 event.eventId(),
@@ -244,12 +260,77 @@ public class NotificationDispatchService {
                         ADMIN_WALLET_CREDITED, REFERRAL_REWARD_CREDITED -> parseTransaction(event);
                 case SUBSCRIPTION_PURCHASED, CAMPAIGN_COMPLETED -> parseCampaign(event);
                 case TASK_ASSIGNED -> parseTaskAssigned(event);
+                case ADMIN_BROADCAST -> parseAdminBroadcast(event);
             };
         } catch (ValidationException ex) {
             throw ex;
         } catch (IllegalArgumentException ex) {
             throw new RetryableNotificationException("Invalid payload for event type " + event.eventType(), ex);
         }
+    }
+
+    private ParsedNotification parseAdminBroadcast(NotificationEvent event) {
+        AdminBroadcastPayload payload = objectMapper.convertValue(event.payload(), AdminBroadcastPayload.class);
+        validateRecipient(payload.email(), payload.userId());
+        if (!StringUtils.hasText(payload.subject()) || payload.subject().length() > 200) {
+            throw new ValidationException("payload.subject is required and must be at most 200 characters");
+        }
+        if (!StringUtils.hasText(payload.bodyText()) || payload.bodyText().length() > 8000) {
+            throw new ValidationException("payload.bodyText is required and must be at most 8000 characters");
+        }
+        if (!StringUtils.hasText(payload.eventToken())) {
+            throw new ValidationException("payload.eventToken is required");
+        }
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("bodyText", payload.bodyText());
+        extras.put("subject", payload.subject());
+        return new ParsedNotification(
+                payload.userId(),
+                payload.displayName(),
+                payload.email(),
+                payload.eventToken(),
+                null,
+                null,
+                extras);
+    }
+
+    private void markAdminSkipped(
+            NotificationEvent event, ParsedNotification parsed, MailComposer.ComposedMail composed) {
+        ProcessedEventEntity processing = processedEventRepository
+                .findByEventId(event.eventId())
+                .orElseThrow(() -> new IllegalStateException("Missing processed event"));
+        processing.setStatus(ProcessedEventStatus.SKIPPED);
+        processedEventRepository.save(processing);
+        if (!deliveryRepository.existsByEventId(event.eventId())) {
+            DeliveryEntity delivery = new DeliveryEntity();
+            delivery.setEventId(event.eventId());
+            delivery.setTemplate(composed.template().templateName());
+            delivery.setRecipientEmail(composed.recipientEmail());
+            delivery.setSubject(composed.subject());
+            delivery.setStatus(ProcessedEventStatus.SKIPPED.name());
+            delivery.setErrorCode("SEND_DISABLED");
+            delivery.setServiceRequestId(processing.getServiceRequestId());
+            delivery.setCallbackStatus("PENDING");
+            delivery.setCallbackAttempts(0);
+            deliveryRepository.save(delivery);
+        }
+        broadcastCallback.dispatch(event.eventId(), "SKIPPED", "SEND_DISABLED");
+    }
+
+    private static boolean isAdminBroadcast(NotificationEvent event) {
+        return "ADMIN_BROADCAST".equals(event.eventType());
+    }
+
+    private static String adminSubjectOverride(NotificationEvent event, ParsedNotification parsed) {
+        if (!isAdminBroadcast(event)) {
+            return null;
+        }
+        Object subject = parsed.extraVariables().get("subject");
+        String override = subject == null ? null : subject.toString();
+        if (!StringUtils.hasText(override)) {
+            throw new ValidationException("payload.subject is required");
+        }
+        return override;
     }
 
     private ParsedNotification parseEmailVerification(NotificationEvent event) {
@@ -433,7 +514,7 @@ public class NotificationDispatchService {
         delivery.setEventId(processing.getEventId());
         delivery.setTemplate(composed.template().templateName());
         delivery.setRecipientEmail(composed.recipientEmail());
-        delivery.setSubject(composed.template().subject());
+        delivery.setSubject(composed.subject());
         delivery.setStatus(ProcessedEventStatus.SENT.name());
         delivery.setServiceRequestId(processing.getServiceRequestId());
         delivery.setSentAt(Instant.now());
@@ -515,7 +596,7 @@ public class NotificationDispatchService {
         if (composed != null) {
             delivery.setTemplate(composed.template().templateName());
             delivery.setRecipientEmail(composed.recipientEmail());
-            delivery.setSubject(composed.template().subject());
+            delivery.setSubject(composed.subject());
         } else {
             delivery.setTemplate(event.eventType());
             delivery.setRecipientEmail(parsed.email() != null ? parsed.email() : "unknown");
@@ -577,7 +658,8 @@ public class NotificationDispatchService {
         SENT,
         DUPLICATE,
         EXPIRED,
-        SKIPPED_UNKNOWN
+        SKIPPED_UNKNOWN,
+        SKIPPED
     }
 
     public record DispatchOutcome(String eventId, DispatchStatus status, String serviceRequestId) {}

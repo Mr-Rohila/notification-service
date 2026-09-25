@@ -1,5 +1,7 @@
 package com.tubetasks.notification.stream;
 
+import com.tubetasks.notification.api.exception.RetryableNotificationException;
+import com.tubetasks.notification.client.BroadcastDeliveryCallback;
 import com.tubetasks.notification.common.NotificationServiceProperties;
 import com.tubetasks.notification.common.ServiceRequestIdFilter;
 import com.tubetasks.notification.event.NotificationEvent;
@@ -15,11 +17,15 @@ public class NotificationEventConsumer implements Consumer<Message<NotificationE
 
     private final NotificationDispatchService dispatchService;
     private final NotificationServiceProperties properties;
+    private final BroadcastDeliveryCallback broadcastCallback;
 
     public NotificationEventConsumer(
-            NotificationDispatchService dispatchService, NotificationServiceProperties properties) {
+            NotificationDispatchService dispatchService,
+            NotificationServiceProperties properties,
+            BroadcastDeliveryCallback broadcastCallback) {
         this.dispatchService = dispatchService;
         this.properties = properties;
+        this.broadcastCallback = broadcastCallback;
     }
 
     @Override
@@ -37,6 +43,13 @@ public class NotificationEventConsumer implements Consumer<Message<NotificationE
         MDC.put(ServiceRequestIdFilter.SERVICE_REQUEST_ID, serviceRequestId);
         try {
             dispatchService.dispatchFromKafka(event);
+        } catch (RetryableNotificationException ex) {
+            if (event != null
+                    && "ADMIN_BROADCAST".equals(event.eventType())
+                    && deliveryAttempt(message) >= 3) {
+                broadcastCallback.pendingAfterSend(event.eventId(), "SMTP_FAILED");
+            }
+            throw ex;
         } finally {
             MDC.remove(ServiceRequestIdFilter.SERVICE_REQUEST_ID);
         }
@@ -47,5 +60,16 @@ public class NotificationEventConsumer implements Consumer<Message<NotificationE
             return first;
         }
         return second;
+    }
+
+    private static int deliveryAttempt(Message<NotificationEvent> message) {
+        Object value = message.getHeaders().get("deliveryAttempt");
+        if (!(value instanceof Number)) {
+            value = message.getHeaders().get("kafka_deliveryAttempt");
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return 1;
     }
 }

@@ -1,0 +1,4 @@
+[[${bodyText}]]
+
+This is an automated message. Please do not reply.
+TubeTasks © [[${#temporals.format(#temporals.createNow(), 'yyyy')}]]

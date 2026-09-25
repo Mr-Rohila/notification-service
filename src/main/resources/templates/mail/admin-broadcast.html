@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{mail/fragments/email-layout :: layout('TubeTasks', ~{::section})}">
+<section>
+    <p th:text="${bodyText}" style="white-space: pre-wrap; margin: 0;">Body</p>
+</section>
+</html>

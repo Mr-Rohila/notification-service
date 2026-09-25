@@ -46,6 +46,12 @@ public class DeliveryEntity {
     @Column(name = "service_request_id", length = 64)
     private String serviceRequestId;
 
+    @Column(name = "callback_status", length = 16)
+    private String callbackStatus;
+
+    @Column(name = "callback_attempts", nullable = false)
+    private int callbackAttempts;
+
     @Column(name = "sent_at")
     private Instant sentAt;
 
@@ -146,6 +152,22 @@ public class DeliveryEntity {
 
     public void setServiceRequestId(String serviceRequestId) {
         this.serviceRequestId = serviceRequestId;
+    }
+
+    public String getCallbackStatus() {
+        return callbackStatus;
+    }
+
+    public void setCallbackStatus(String callbackStatus) {
+        this.callbackStatus = callbackStatus;
+    }
+
+    public int getCallbackAttempts() {
+        return callbackAttempts;
+    }
+
+    public void setCallbackAttempts(int callbackAttempts) {
+        this.callbackAttempts = callbackAttempts;
     }
 
     public Instant getSentAt() {

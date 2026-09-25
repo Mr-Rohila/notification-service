@@ -14,7 +14,8 @@ public enum NotificationEventType {
     CAMPAIGN_COMPLETED,
     TASK_ASSIGNED,
     ADMIN_WALLET_CREDITED,
-    REFERRAL_REWARD_CREDITED;
+    REFERRAL_REWARD_CREDITED,
+    ADMIN_BROADCAST;
 
     public static boolean isKnown(String eventType) {
         if (eventType == null) {

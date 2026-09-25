@@ -185,6 +185,28 @@ class MailComposerTests {
     }
 
     @Test
+    void composesAdminBroadcastWithEscapedBodyAndNewlines() {
+        TemplateRegistry.TemplateDefinition template = new TemplateRegistry.TemplateDefinition(
+                "admin-broadcast", "TubeTasks", "noreply@tubetasks.in", "TubeTasks");
+        MailComposer.ComposedMail composed = mailComposer.compose(
+                template,
+                "Jane",
+                "jane@example.com",
+                null,
+                null,
+                java.util.Map.of("bodyText", "Hello\n<script>alert(1)</script>"),
+                "Balance update");
+        assertThat(composed.subject()).isEqualTo("Balance update");
+        assertThat(composed.htmlBody()).contains("white-space: pre-wrap");
+        assertThat(composed.htmlBody()).contains("&lt;script&gt;");
+        assertThat(composed.htmlBody()).doesNotContain("<script>");
+        assertThat(composed.htmlBody()).contains("TubeTasks");
+        assertThat(composed.textBody()).contains("Hello\n");
+        assertThat(composed.textBody()).contains("This is an automated message. Please do not reply.");
+        assertThat(composed.textBody()).contains("TubeTasks");
+    }
+
+    @Test
     void allowsMissingActionUrlForInformationalMail() {
         mailComposer.validateActionUrl(null);
         mailComposer.validateActionUrl("");
