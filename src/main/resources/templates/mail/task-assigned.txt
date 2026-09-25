@@ -2,19 +2,10 @@
 
 Hi [( ${displayName} )],
 
-A TubeTasks subscribe task has been assigned to you. Open the channel, subscribe, then upload your proof from TubeTasks.
+A TubeTasks subscribe task has been assigned to you. Open TubeTasks to see the channel, subscribe, then upload your proof.
 
-[# th:if="${channelTitle != null}"]
-Channel: [( ${channelTitle} )]
-[/]
-[# th:if="${channelUrl != null}"]
-YouTube: [( ${channelUrl} )]
-[/]
 [# th:if="${amount != null}"]
 Reward: [( ${amount} )] [# th:if="${currency != null}"][( ${currency} )][/]
-[/]
-[# th:if="${planTitle != null}"]
-Plan: [( ${planTitle} )]
 [/]
 [# th:if="${actionUrl != null}"]
 Open TubeTasks: [( ${actionUrl} )]

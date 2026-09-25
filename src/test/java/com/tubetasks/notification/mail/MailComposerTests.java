@@ -175,13 +175,13 @@ class MailComposerTests {
                         "currency",
                         "INR"));
         assertThat(composed.htmlBody()).contains("You have a new task");
-        assertThat(composed.htmlBody()).contains("My Channel");
-        assertThat(composed.htmlBody()).contains("https://youtube.com/@mychannel");
         assertThat(composed.htmlBody()).contains("5.0000");
         assertThat(composed.htmlBody()).contains("Open TubeTasks");
         assertThat(composed.htmlBody()).contains("http://localhost:4200");
         assertThat(composed.textBody()).contains("assigned to you");
         assertThat(composed.textBody()).contains("http://localhost:4200");
+        assertThat(composed.htmlBody()).doesNotContain("My Channel", "https://youtube.com/@mychannel", "Starter");
+        assertThat(composed.textBody()).doesNotContain("My Channel", "https://youtube.com/@mychannel", "Starter");
     }
 
     @Test
